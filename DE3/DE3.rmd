@@ -1,0 +1,55 @@
+
+## Import
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+```
+
+## Read in the data
+
+```{r}
+df = read.csv("aiddata_reduced.csv")
+```
+
+Question 1: a) How does the amount donated vs. amount received change over time for each country?; b) Are there countries that mostly send or mostly receive and countries that have a similar amount of donations they receive and send?; c) Are there countries that change their role over time? That is, they used to mostly send donations and turn into mostly receiving donations and vice-versa?; d) Are there countries in which you can find a sudden increase (“peak”) or a sudden decrease (“valley”)?
+
+```{r}
+# convert to long format
+df_long = 
+  df%>%
+    pivot_longer(cols = c("donor","recipient"),
+                 names_to = "role",
+                 values_to = "country")
+```
+
+```{r}
+df_long%>%
+  group_by(country)%>%
+  summarise(
+    n_donate=sum(role=="donor"),
+    n_receive=sum(role=="recipient")
+    )
+```
+
+```{r}
+# a) How does the amount donated vs. amount received change over time for each country?
+df_long %>%
+  # filter(country=="Korea")%>%
+  ggplot(aes(x=year,y=commitment_amount_usd_constant,color=role))+
+  geom_line()+
+  geom_point()+
+  facet_wrap(.~country)+
+  scale_y_continuous(
+    trans = log10_trans(),
+    breaks = trans_breaks("log10", function(x) 10^x),
+    labels = trans_format("log10", math_format(10^.x))
+    )
+```
+
+
+
+
+
