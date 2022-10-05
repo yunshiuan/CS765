@@ -142,4 +142,107 @@ ggsave(
 )
 ```
 
+
+## Q2
+Focus on the top 10 “Coalesced Purposes” of donations (in terms of amount of disbursement across all countries and all time). What are the top 10 purposes of disbursements (in terms of total amount of disbursement) and how does their relative amount compare over time? E.g., are there purposes that tend to be prominent for a period of time and others that become more prominent during other periods? Hint: looking at the graph one should be able to observe: “Ah! During these years donations were mostly about X but then there were way more donations about Y”. Note: if the purpose is “UNSPECIFIED” it should be removed.
+
+```{r}
+df <- read.csv("aiddata_reduced.csv")
+
+df_long <-
+  df %>%
+  pivot_longer(
+    cols = c("donor", "recipient"),
+    names_to = "role",
+    values_to = "country"
+  )
+
+df_purpose_by_year <-
+  df_long %>%
+  group_by(coalesced_purpose_name, year) %>%
+  summarise(
+    sum_amount = sum(commitment_amount_usd_constant)
+  )
+# fill the missing values
+# - https://stackoverflow.com/questions/55398452/geom-area-produces-blank-areas-between-layers
+df_purpose_by_year <-
+  df_purpose_by_year %>%
+  ungroup() %>%
+  complete(coalesced_purpose_name, year) %>%
+  mutate(sum_amount = ifelse(is.na(sum_amount),
+    yes = 0, no = sum_amount
+  ))
+# get the order of the purpose by sum
+# - used for converting purpose into factor
+purpose_order_by_sum <-
+  df_long %>%
+  group_by(coalesced_purpose_name) %>%
+  summarise(
+    sum_amount = sum(commitment_amount_usd_constant)
+  ) %>%
+  arrange(desc(sum_amount)) %>%
+  pull(coalesced_purpose_name)
+
+df_purpose_by_year <-
+  df_purpose_by_year %>%
+  mutate(
+    coalesced_purpose_name = factor(coalesced_purpose_name,
+      levels = purpose_order_by_sum
+    )
+  )
 ```
+
+### Stacked area plot
+
+```{r}
+g_q2_1 = 
+  df_purpose_by_year %>%
+    mutate(
+      coalesced_purpose_name = factor(coalesced_purpose_name,
+        levels = rev(purpose_order_by_sum)
+      )
+    ) %>%
+    ggplot(aes(x = year, y = sum_amount, fill = coalesced_purpose_name)) +
+    geom_area(color = "black") +
+    # scale_fill_discrete("Coalesced Purpose")+
+    scale_fill_brewer("Coalesced Purpose",palette="Set3")+
+    # geom_line(color="black")+
+    labs(
+      x = "year", y = "Amount (USD)",
+      title = "The change in the amount of aid of the top-10 coalesced purposes"
+    ) +
+    theme(
+      plot.title =
+        element_text(hjust = 0.5)
+    )
+ggsave(filename = "2-1_raw.pdf",plot = g_q2_1,
+         width = 6.65, height = 7.25, scale = 2)
+```
+ 
+### Line plots
+
+```{r}
+g_q2_2 = 
+df_purpose_by_year %>%
+  filter(sum_amount != 0) %>%
+  ggplot(aes(x = year, y = sum_amount)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(. ~ coalesced_purpose_name) +
+  scale_y_continuous(
+    trans = log10_trans(),
+    breaks = trans_breaks("log10", function(x) 10^x),
+    labels = trans_format("log10", math_format(10^.x))
+  ) +
+  labs(
+    x = "year", y = "Amount (USD)",
+    title = "The change in the amount of aid of the top-10 coalesced purposes \n (ordered by the total amount in a descending order)"
+  ) +
+  theme(
+    plot.title =
+      element_text(hjust = 0.5)
+  )
+ggsave(filename = "2-2_raw.pdf",plot = g_q2_2,
+         width = 6.65, height = 7.25, scale = 2)
+``` 
+ 
