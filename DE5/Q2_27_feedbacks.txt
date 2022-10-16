@@ -1,0 +1,12 @@
+# critique 1
+1) If the goal was to show the amount of disbursement for a particular purpose, keeping the number in an exponential notation might be difficult to understand for a person without this background. Specifying the notation's value can make it clear to the viewer.
+
+2) If the goal was to use different colors for different purposes, using the gray color for rail transport might be confusing since it is also the color for the background of the graph. Using a different color can make the rail transport quantity more differentiable.
+
+3) If the goal was to show maximum amount disbursed for a particular purpose, labeling that or marking that reason in the graph to separate it out and give more attention to it.
+
+# critique 2
+If the purpose is to see the temporal trends of the top 10 aid purposes, this visualization is very good because it not only shows the absolute value but also the relative proportion. The stacked area encoding makes it easy to discern the year by year changes. One disadvantage is that there are 10 categories and it might be difficult to distinguish between them. Also, the colors picked do not seem to be accessible for color-blinded people.
+
+Another difficulty lies in the amount of encoding. The scientific encoding makes it hard for people to understand. Maybe you can change the notation method.
+

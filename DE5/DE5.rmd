@@ -1,0 +1,277 @@
+
+## Import
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+library(gridExtra)
+```
+
+## Read in the data
+
+```{r}
+df <- read.csv("aiddata_reduced.csv")
+```
+
+## Q1 
+Question 1: a) How does the amount donated vs. amount received change over time for each country?; b) Are there countries that mostly send or mostly receive and countries that have a similar amount of donations they receive and send?; c) Are there countries that change their role over time? That is, they used to mostly send donations and turn into mostly receiving donations and vice-versa?; d) Are there countries in which you can find a sudden increase (“peak”) or a sudden decrease (“valley”)?
+
+```{r}
+# convert to long format
+df_long <-
+  df %>%
+  pivot_longer(
+    cols = c("donor", "recipient"),
+    names_to = "role",
+    values_to = "country"
+  )
+# sum across records within each year
+df_long <-
+  df_long %>%
+  group_by(country, year, role) %>%
+  summarise(
+    sum_amount = sum(commitment_amount_usd_constant)
+  )
+```
+
+### Get the role of each country
+
+```{r}
+df_role_each_country <-
+  df_long %>%
+  group_by(country) %>%
+  summarise(
+    n_donate = sum(role == "donor"),
+    n_receive = sum(role == "recipient")
+  ) %>%
+  mutate(country_role = case_when(
+    (n_donate > 0 & n_receive == 0) ~ "donor_only",
+    (n_donate == 0 & n_receive > 0) ~ "recipient_only",
+    (n_donate > 0 & n_receive > 0) ~ "donor_and_recipient"
+  ))
+
+# attach to the long data
+df_long <-
+  df_long %>%
+  left_join(df_role_each_country %>%
+    select(country, country_role), by = "country")
+```
+
+### Get the slope of each linear regression model 
+- corresponds to `geom_smooth(method='lm', formula= y~x)` below
+
+```{r}
+df_lm_each_country <-
+  df_long %>%
+  group_by(country) %>%
+  do({
+    mod <- lm(log10(sum_amount) ~ year, data = .)
+    data.frame(
+      Intercept = coef(mod)[1],
+      Slope = coef(mod)[2]
+    )
+  })
+
+country_order_by_slope <-
+  df_lm_each_country %>%
+  arrange(desc(Slope)) %>%
+  pull(country)
+
+# attach to the long data
+df_long <-
+  df_long %>%
+  left_join(df_lm_each_country %>%
+    select(country, lm_slope = Slope), by = "country")
+
+# factorize the country
+df_long <-
+  df_long %>%
+  mutate(country = factor(country, levels = country_order_by_slope))
+```
+
+```{r}
+# a) How does the amount donated vs. amount received change over time for each country?
+# a-1) donor-only country
+COLOR_DONOR <- "#619CFF"
+g_donor <-
+  df_long %>%
+  filter(country_role == "donor_only") %>%
+  ggplot(aes(x = year, y = sum_amount)) +
+  geom_line(color = COLOR_DONOR) +
+  geom_point(color = COLOR_DONOR) +
+  geom_smooth(method = "lm", formula = y ~ x, color = "black", se = FALSE) +
+  facet_wrap(. ~ country, scales = "free") +
+  scale_y_continuous(
+    trans = log10_trans(),
+    breaks = c(10^c(3:10)),
+    labels = c(
+      "1K", "10K", "100K",
+      "1M", "10M", "100M",
+      "1B", "10B"
+    ),
+    # breaks = trans_breaks("log10", function(x) 10^x,n = 7),
+    # labels = trans_format("log10", math_format(10^.x)),
+    limits = c(
+      min(df_long$sum_amount),
+      max(df_long$sum_amount)
+    )
+  ) +
+  scale_x_continuous(
+    limits = c(
+      min(df_long$year),
+      max(df_long$year)
+    )
+  ) +
+  labs(
+    x = "year", y = "Amount (USD)",
+    title = 'Countries that are donors (without reception records) in the "Reduced Dataset"'
+  ) +
+  theme_bw() +
+  theme(
+    panel.grid.minor = element_line(size = 0.2),
+    panel.grid.major = element_line(size = 0.5),
+    panel.grid.minor.y = element_blank(),
+    plot.title = element_text(
+      size = 22, hjust = 0.5, color = "#002f80", face = "bold"
+    )
+  )
+
+# a-2) reception-only country
+COLOR_RECIPIENT <- "#F8766D"
+g_recipeint <-
+  df_long %>%
+  filter(country_role == "recipient_only") %>%
+  ggplot(aes(x = year, y = sum_amount)) +
+  geom_line(color = COLOR_RECIPIENT) +
+  geom_point(color = COLOR_RECIPIENT) +
+  geom_smooth(method = "lm", formula = y ~ x, color = "black", se = FALSE) +
+  facet_wrap(. ~ country, scales = "free") +
+  scale_y_continuous(
+    trans = log10_trans(),
+    # breaks = trans_breaks("log10", function(x) 10^x,n = 7),
+    # labels = trans_format("log10", math_format(10^.x)),
+    breaks = c(10^c(3:10)),
+    labels = c(
+      "1K", "10K", "100K",
+      "1M", "10M", "100M",
+      "1B", "10B"
+    ),
+    limits = c(
+      min(df_long$sum_amount),
+      max(df_long$sum_amount)
+    )
+  ) +
+  scale_x_continuous(
+    limits = c(
+      min(df_long$year),
+      max(df_long$year)
+    )
+  ) +
+  labs(
+    x = "year", y = "Amount (USD)",
+    title = 'Countries that are recipients (without donation records) in the "Reduced Dataset"'
+  ) +
+  theme_bw() +
+  theme(
+    panel.grid.minor = element_line(size = 0.2),
+    panel.grid.major = element_line(size = 0.5),
+    panel.grid.minor.y = element_blank(),
+    plot.title = element_text(
+      size = 22, hjust = 0.5, color = "#610b05", face = "bold"
+    )
+  )
+```
+
+```{r}
+# grid.arrange(g_donor, g_recipeint, ncol = 1)
+g <- arrangeGrob(g_donor, g_recipeint, ncol = 1, nrow = 2)
+ggsave(
+  filename = "1_raw.pdf", plot = g,
+  width = 6.65, height = 7.25, scale = 2
+)
+```
+
+
+## Q2
+Focus on the top 10 “Coalesced Purposes” of donations (in terms of amount of disbursement across all countries and all time). What are the top 10 purposes of disbursements (in terms of total amount of disbursement) and how does their relative amount compare over time? E.g., are there purposes that tend to be prominent for a period of time and others that become more prominent during other periods? Hint: looking at the graph one should be able to observe: “Ah! During these years donations were mostly about X but then there were way more donations about Y”. Note: if the purpose is “UNSPECIFIED” it should be removed.
+
+```{r}
+df <- read.csv("aiddata_reduced.csv")
+
+df_long <-
+  df %>%
+  pivot_longer(
+    cols = c("donor", "recipient"),
+    names_to = "role",
+    values_to = "country"
+  )
+
+df_purpose_by_year <-
+  df_long %>%
+  group_by(coalesced_purpose_name, year) %>%
+  summarise(
+    sum_amount = sum(commitment_amount_usd_constant)
+  )
+# fill the missing values
+# - https://stackoverflow.com/questions/55398452/geom-area-produces-blank-areas-between-layers
+df_purpose_by_year <-
+  df_purpose_by_year %>%
+  ungroup() %>%
+  complete(coalesced_purpose_name, year) %>%
+  mutate(sum_amount = ifelse(is.na(sum_amount),
+    yes = 0, no = sum_amount
+  ))
+# get the order of the purpose by sum
+# - used for converting purpose into factor
+purpose_order_by_sum <-
+  df_long %>%
+  group_by(coalesced_purpose_name) %>%
+  summarise(
+    sum_amount = sum(commitment_amount_usd_constant)
+  ) %>%
+  arrange(desc(sum_amount)) %>%
+  pull(coalesced_purpose_name)
+
+df_purpose_by_year <-
+  df_purpose_by_year %>%
+  mutate(
+    coalesced_purpose_name = factor(coalesced_purpose_name,
+      levels = purpose_order_by_sum
+    )
+  )
+```
+
+### Stacked area plot
+
+```{r}
+g_q2_1 <-
+  df_purpose_by_year %>%
+  mutate(
+    coalesced_purpose_name = factor(coalesced_purpose_name,
+      levels = rev(purpose_order_by_sum)
+    )
+  ) %>%
+  ggplot(aes(x = year, y = sum_amount, fill = coalesced_purpose_name)) +
+  geom_area(color = "black") +
+  # scale_fill_discrete("Coalesced Purpose")+
+  scale_fill_brewer("Coalesced Purpose", palette = "Set3") +
+  # geom_line(color="black")+
+  labs(
+    x = "year", y = "Amount (USD)",
+    title = "The change in the amount of aid of the top-10 coalesced purposes"
+  ) +
+  theme(
+    plot.title =
+      element_text(hjust = 0.5)
+  )
+ggsave(
+  filename = "2_raw.pdf", plot = g_q2_1,
+  width = 6.65, height = 7.25, scale = 2
+)
+```
+ 
+```{r}
+
+```

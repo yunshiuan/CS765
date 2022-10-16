@@ -1,0 +1,9 @@
+# critique 1
+If Objective: There is a too big chart that includes multiple small charts; if I want to see data in a specific country, I have to scroll the axis to align.
+Aspect: readability.&#160;
+Principle: we should make charts easier to read.
+Alternatives: x coordinates should be shown in every chart. Or you should align x coordinates.
+
+# critique 2
+Maybe I misunderstood something when I looked at the data creating my own visualization, but it seems to me that the designer's claim that "all countries either only donate or only receive" is false. As such, they only list a country's donations if it has no receiving history and vice versa, leaving out much of the data in the process. For those countries that are listed, the choice of a scatterplot with connected lines and an average trend line does make it quite easy to see how a given country's donation or receiving history changes over time, as well as if they have any significant highs or lows and where they might be. Unfortunately due to the nature of the excluded data, comparing any country's donations to its received funds for those which have done both is impossible.
+
