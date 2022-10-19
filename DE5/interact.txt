@@ -1,0 +1,7 @@
+Q: If we asked you to create an interactive version of this assignment, do you think you are well enough prepared for the programming aspects? (as in, do you think you know enough about building an interactive visualization that you would be able to try doing it)
+A: I think so. It will take some time but I am willing to learn.
+
+
+
+If we asked you to create an interactive version of this assignment, what tools would you use (languages and libraries)?
+A: I may use plotly with either R or python. I may also try out Altair as introduced in the course.

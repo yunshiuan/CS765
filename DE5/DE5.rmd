@@ -246,7 +246,7 @@ df_purpose_by_year <-
 ### Stacked area plot
 
 ```{r}
-g_q2_1 <-
+g_q2 <-
   df_purpose_by_year %>%
   mutate(
     coalesced_purpose_name = factor(coalesced_purpose_name,
@@ -257,17 +257,22 @@ g_q2_1 <-
   geom_area(color = "black") +
   # scale_fill_discrete("Coalesced Purpose")+
   scale_fill_brewer("Coalesced Purpose", palette = "Set3") +
+  scale_y_continuous(
+    breaks = c(0:4) * 10^10,
+    labels = c("0", "10B", "20B", "30B", "40B")
+  ) +
   # geom_line(color="black")+
   labs(
     x = "year", y = "Amount (USD)",
     title = "The change in the amount of aid of the top-10 coalesced purposes"
   ) +
+  theme_bw() +
   theme(
     plot.title =
-      element_text(hjust = 0.5)
+      element_text(hjust = 0.5,size = 22,face = "bold")
   )
 ggsave(
-  filename = "2_raw.pdf", plot = g_q2_1,
+  filename = "2_raw.pdf", plot = g_q2,
   width = 6.65, height = 7.25, scale = 2
 )
 ```
