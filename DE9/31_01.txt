@@ -1,0 +1,18 @@
+31_01 - 3 critiques
+
+## 31_01 31_01.pdf
+
+I think this is a well done visualization with a lot of good components. I appreciate the large bold and easy to read text. The subtext below the chart is also very helpful for detailing what specific story the visual is trying to convey.
+
+My suggestion for the final would be to try to reduce the visual's dependency on the text below, and let the visual components do more of the work. The numeric labels on the trend lines are helpful, but if the goal is to emphasize certain points in time, data points that are not as important could go unlabeled. This would reduce the visual density of the chart and pull the viewer's attention to certain points. 
+
+Adding annotations to the chart could also be a way to move portions of the subtext important to the story into the visual itself.
+
+## 31_01 31_01.pdf
+
+If the goal is to compare male vs female trends for each of the categories, it might be useful to display the difference between their values as household children increases. This makes for easier comparison than looking between the charts. To make the y axis label more readable, I think having the orientation be horizontal would help.
+
+## 31_01 31-01
+
+If the goal is to show a comparison between the trends of time spent watching tv, work and sleeping with respect to number of children for male and female separately, this design does a good job. The common axis for number of children lets the viewer easily compare across different activities and how time spent for them changes between men and women as well. The text encoding for each point on the trend line also makes it easy for the viewer to see the actual value and compare with others. If the goal was to show how much more time was spent for one activity compared to another, then this design might not show that information in the most efficient way. The Title, descriptions on the legend, and text information below the design make it easier for the viewer to interpret the information. 
+

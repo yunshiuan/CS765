@@ -1,0 +1,9 @@
+31_03 - 2 critiques
+
+## 31_03 31_03.pdf
+
+If the goal is to show the difference between male and female time spent on activities, it might be better to show the difference in time spent on the same chart to make for easier comparison. While the current design shows trends for each sex well, it is hard to put a number on exactly how much more males watch tv compared to females.
+
+## 31_03 31-03
+
+If the goal is to show how much more time males or females spent on a particular activity, it would be hard to do do so since there aren’t any text markings of the values of each dot on the line graph. The activities being arranged in order from top to bottom allows the user to know which activity people spent most time on from 2015 to 2021. The distinct color encoding for the different activities makes it easy to distinguish them. If the goal was to show specifically that there was a significant change in the way people started spending their time during the pandemic, this chat does not highlight that well. All the trend lines and dots are the same and there is no distinguishing between 2020, 2021 and the other years, if that was the intention. Highlighting the year or the markings or values might help in drawing attention to the years the designer wants the user to focus on. 
