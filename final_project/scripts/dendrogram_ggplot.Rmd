@@ -31,11 +31,16 @@ library(ggrepel)
 PATH_ROOT <- "/Users/vimchiz/github_local/PhD_courses/CS765"
 PATH_ATUSSUM_RAW_DATA <- file.path(PATH_ROOT, "DE7", "data")
 PATH_SAMPLE_TREE <- file.path(PATH_ROOT, "final_project", "data")
+PATH_TREE <- file.path(PATH_ROOT, "final_project", "data")
+
 # File
 FILE_ATUSSUM_RAW_DATA <- file.path(PATH_ATUSSUM_RAW_DATA, "atussum_0321.csv")
 FILE_SAMPLE_TREE_V0 <- file.path(PATH_SAMPLE_TREE, "sample_tree_newick_v0.nwk")
 FILE_SAMPLE_TREE_V1 <- file.path(PATH_SAMPLE_TREE, "sample_tree_newick_v1.nwk")
 FILE_SAMPLE_TREE_V2 <- file.path(PATH_SAMPLE_TREE, "sample_tree_newick_v2.nwk")
+FILE_TREE_A <- file.path(PATH_TREE, "tree_newick_a.nwk")
+FILE_TREE_B <- file.path(PATH_TREE, "tree_newick_b.nwk")
+FILE_TREE_C <- file.path(PATH_TREE, "tree_newick_c.nwk")
 ```
 
 # Sample Trees-v0
@@ -142,7 +147,7 @@ create_tree_string_newick_one_layer <- function(input_string_split, node_names_t
       while (i_backward >= 0) {
         i_backward <- i_backward - 1
         # insert
-        if (i_backward==0||input_string_split[i_backward] %in% c("(", ",")) {
+        if (i_backward == 0 || input_string_split[i_backward] %in% c("(", ",")) {
           name_parent_node <- input_string_split[(i_backward + 1):(i_c - 1)]
           name_child_node <- "("
           for (node_name in node_names_this_level) {
@@ -183,14 +188,15 @@ create_tree_string_newick_one_layer <- function(input_string_split, node_names_t
 ```{r}
 if (!file.exists(FILE_SAMPLE_TREE_V2)) {
   # create the string pragmatically
-  list_name_levels = list(c("All"),
-                          c("S1","S2"),
-                          c("A1","A2","A3"),
-                          c("E1","E2","E3")
-                          # c("I1","I2","I3")
-                          )
-  str_sample_tree_v2 = create_tree_string_newick(list_name_levels)
-  write.table(str_sample_tree_v2, FILE_SAMPLE_TREE_V2, col.names = F, row.names = F, quote = F)  
+  list_name_levels <- list(
+    c("All"),
+    c("S1", "S2"),
+    c("A1", "A2", "A3"),
+    c("E1", "E2", "E3")
+    # c("I1","I2","I3")
+  )
+  str_sample_tree_v2 <- create_tree_string_newick(list_name_levels)
+  write.table(str_sample_tree_v2, FILE_SAMPLE_TREE_V2, col.names = F, row.names = F, quote = F)
 }
 ```
 
@@ -202,46 +208,243 @@ sample_tree_v2 <- read.tree(FILE_SAMPLE_TREE_V2)
 
 ## Plot
 
+### Design 1: Area encoding (circle)
+
 ```{r}
-num_nodes = length(c(sample_tree_v2$node.label, sample_tree_v2$tip.label))
-SIZE_SCALING_FACTOR = 1000
+num_nodes <- length(c(sample_tree_v2$node.label, sample_tree_v2$tip.label))
+SIZE_SCALING_FACTOR <- 1000
 df_node_feature <- data.frame(
   node_label = c(sample_tree_v2$node.label, sample_tree_v2$tip.label),
   node_text = c(sample_tree_v2$node.label, sample_tree_v2$tip.label),
   # sqrt because the size is defined by area while ggplot scale both the width and height by the size
-  node_size = sqrt(c(1,1/2,1/4,1/4,1/4,1/2,1/4,1/4,1/4,
-                rep(1/8,times = length(sample_tree_v2$tip.label)))*SIZE_SCALING_FACTOR)
+  node_size = sqrt(c(
+    1, 1 / 2, 1 / 4, 1 / 4, 1 / 4, 1 / 2, 1 / 4, 1 / 4, 1 / 4,
+    rep(1 / 8, times = length(sample_tree_v2$tip.label))
+  ) * SIZE_SCALING_FACTOR)
   # node_size = sqrt(seq(num_nodes,1)*0.05)
 )
 
 # add size to the text to show
-df_node_feature$node_text = 
+df_node_feature$node_text <-
   paste0(
-    df_node_feature$node_text,"\n",
-    100*round(df_node_feature$node_size^2/SIZE_SCALING_FACTOR,2),
+    df_node_feature$node_text, "\n",
+    round(100 * df_node_feature$node_size^2 / SIZE_SCALING_FACTOR, 1),
     " %"
-    )
+  )
 
-p <- 
+p_1 <-
   ggtree(sample_tree_v2, branch.length = "none", layout = "ellipse") %<+%
   # ggtree(sample_tree_v2, branch.length = "none", layout = "fan",open.angle = 30) %<+%
   df_node_feature +
-  geom_point(aes(size = node_size), shape = "square",alpha=0.5) +
+  geom_point(aes(size = node_size), shape = "circle", alpha = 0.5) +
   geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
-  scale_x_continuous(expand = c(0.1,0.1))+
-  scale_y_continuous(expand = c(0.1,0.1))+
-  # geom_text_repel(aes(label = node_text), hjust = -0.2) +  
+  scale_x_continuous(expand = c(0.1, 0.1)) +
+  scale_y_continuous(expand = c(0.1, 0.1)) +
+  # geom_text_repel(aes(label = node_text), hjust = -0.2) +
   # ensure the radius encodes the size
   scale_size_identity(
-                      # guide = "legend"
-                      # breaks = sqrt(c(5,10,20,40)),
-                      # labels = c(5,10,20,40)
-                      ) +
-  layout_dendrogram()+
+    # guide = "legend"
+    # breaks = sqrt(c(5,10,20,40)),
+    # labels = c(5,10,20,40)
+  ) +
+  layout_dendrogram() +
   # coord_flip(clip = 'off')+
   # coord_cartesian(clip = 'off') +
   theme(
     legend.position = "bottom"
   )
-p
+p_1
+```
+
+### Design 2: Area+Length encoding (Rectangle)
+
+```{r}
+p_2 <-
+  ggtree(sample_tree_v2, branch.length = "none", layout = "ellipse") %<+%
+  df_node_feature +
+  geom_tile(aes(height = (node_size^2) * 0.005), width = 0.1, colour = "grey50", alpha = 0.5) +
+  # geom_point(aes(size = node_size), shape = "square",alpha=0.5) +
+  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
+  scale_x_continuous(expand = c(0.1, 0.1)) +
+  scale_y_continuous(expand = c(0.1, 0.1)) +
+  # geom_text_repel(aes(label = node_text), hjust = -0.2) +
+  # ensure the radius encodes the size
+  scale_size_identity(
+    # guide = "legend"
+    # breaks = sqrt(c(5,10,20,40)),
+    # labels = c(5,10,20,40)
+  ) +
+  layout_dendrogram() +
+  # coord_flip(clip = 'off')+
+  # coord_cartesian(clip = 'off') +
+  theme(
+    legend.position = "bottom"
+  )
+p_2
+```
+
+# Real Data
+
+## Read in the data
+
+```{r}
+df_real <- read.csv(FILE_ATUSSUM_RAW_DATA)
+```
+
+### Preprocess
+
+```{r}
+# filter out the activities
+df_real <-
+  df_real %>%
+  select(!matches(match = "t\\d+"))
+
+# retain only the variables of interest
+df_real <-
+  df_real %>%
+  select(
+    id = TUCASEID,
+    employ_status = TELFS,
+    sex = TESEX,
+    age = TEAGE,
+    num_children = TRCHILDNUM
+    # income = HUFAMINC
+  )
+
+# bin the continuous variables
+df_real <-
+  df_real %>%
+  mutate(
+    new_employ_status = factor(case_when(
+      employ_status %in% c(1, 2) ~ "E1",
+      employ_status %in% c(3, 4) ~ "E2",
+      employ_status %in% c(5) ~ "E3"
+    )),
+    new_age = factor(case_when(
+      age <= 30 ~ "A1",
+      age > 30 & age <= 65 ~ "A2",
+      age > 65 ~ "A3"
+    )),
+    new_num_children = factor(case_when(
+      num_children == 0 ~ "C1",
+      num_children > 0 & num_children < 3 ~ "C2",
+      num_children >= 3 ~ "C3"
+    )),
+    new_sex = factor(case_when(
+      sex == 1 ~ "S1",
+      sex == 2 ~ "S2"
+    ))
+  )
+```
+
+## design-a) sex-age-employ
+
+### summarize the group distributions
+
+```{r}
+# iterative histogram (the proportion of people at each level)
+list_group_vars_a <- c("new_sex", "new_age", "new_employ_status")
+
+list_df_hist_a <- list()
+
+for (i_group_vars in 1:length(list_group_vars_a)) {
+  group_vars <- list_group_vars_a[1:i_group_vars]
+
+  # the level in the tree (root is 1)
+  i_level <- i_group_vars + 1
+  df_hist_this_level <-
+    df_real %>%
+    group_by(across(all_of(group_vars))) %>%
+    summarise(
+      count = n(),
+      prop = 100 * count / nrow(df_real)
+    ) %>%
+    mutate(i_level = i_level)
+
+  df_hist_this_level$node_label <-
+    apply(df_hist_this_level[, group_vars], 1, function(row) {
+      paste(row, collapse = "")
+    })
+  list_df_hist_a[[i_group_vars]] <- df_hist_this_level
+}
+df_hist_a <- bind_rows(list_df_hist_a)
+
+# add the root node
+df_hist_a = 
+  df_hist_a%>%
+  add_row(node_label="All",prop = 100,count = nrow(df_real))
+```
+
+### Generate the tree features
+
+```{r}
+SIZE_SCALING_FACTOR = 1
+df_node_feature_a <-
+  df_hist_a %>%
+  mutate(
+    node_size = prop*SIZE_SCALING_FACTOR, 
+    node_text = paste0(
+      node_label, "\n",
+      round(node_size, 1),
+      " %"
+    )
+  )%>%
+  select(
+    node_label,
+    node_size,
+    node_text
+  )
+```
+
+### Generate the tree structure
+
+```{r}
+if (!file.exists(FILE_TREE_A)) {
+  # create the string pragmatically
+  list_name_levels <- list(
+    c("All"),
+    c("S1", "S2"),
+    c("A1", "A2", "A3"),
+    c("E1", "E2", "E3")
+    # c("C1","C2","C3")
+  )
+  str_tree <- create_tree_string_newick(list_name_levels)
+  write.table(str_tree, FILE_TREE_A, col.names = F, row.names = F, quote = F)
+}
+```
+
+### Read files
+
+```{r}
+tree_a <- read.tree(FILE_TREE_A)
+```
+
+### Plot: Area+Length encoding (Rectangle)
+
+```{r}
+p_a <-
+  # ggtree(tree_a, branch.length = "none", layout = "ellipse") %<+%
+ggtree(tree_a, branch.length = "none", layout = "dendrogram") %<+%  
+# ggtree(tree_a, branch.length = "none", layout = "circular") %<+%
+# ggtree(tree_a, branch.length = "none", layout = "fan",open.angle = 120) %<+%    
+  df_node_feature_a +
+  geom_tile(aes(height = node_size * 0.05), width = 0.1, colour = "grey50", alpha = 0.5) +
+  # geom_point(aes(size = node_size), shape = "square",alpha=0.5) +
+  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
+  scale_x_continuous(expand = c(0.1, 0.1)) +
+  scale_y_continuous(expand = c(0.1, 0.1)) +
+  # geom_text_repel(aes(label = node_text), hjust = -0.2) +
+  # ensure the radius encodes the size
+  scale_size_identity(
+    # guide = "legend"
+    # breaks = sqrt(c(5,10,20,40)),
+    # labels = c(5,10,20,40)
+  ) +
+  layout_dendrogram() +
+  # coord_flip(clip = 'off')+
+  # coord_cartesian(clip = 'off') +
+  theme(
+    legend.position = "bottom"
+  )
+p_a
 ```
