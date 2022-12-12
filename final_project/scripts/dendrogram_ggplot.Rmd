@@ -105,7 +105,7 @@ p
 
 - a balanced tree with different branching factor at each level
 
-## Generate the tree
+## Generate the tree structure
 
 ```{r}
 # s1_split <- str_split(s1, pattern = "")[[1]]
@@ -206,16 +206,13 @@ if (!file.exists(FILE_SAMPLE_TREE_V2)) {
 sample_tree_v2 <- read.tree(FILE_SAMPLE_TREE_V2)
 ```
 
-## Plot
-
-### Design 1: Area encoding (circle)
+## Generate the tree features
 
 ```{r}
 num_nodes <- length(c(sample_tree_v2$node.label, sample_tree_v2$tip.label))
 SIZE_SCALING_FACTOR <- 1000
 df_node_feature <- data.frame(
   node_label = c(sample_tree_v2$node.label, sample_tree_v2$tip.label),
-  node_text = c(sample_tree_v2$node.label, sample_tree_v2$tip.label),
   # sqrt because the size is defined by area while ggplot scale both the width and height by the size
   node_size = sqrt(c(
     1, 1 / 2, 1 / 4, 1 / 4, 1 / 4, 1 / 2, 1 / 4, 1 / 4, 1 / 4,
@@ -227,11 +224,18 @@ df_node_feature <- data.frame(
 # add size to the text to show
 df_node_feature$node_text <-
   paste0(
-    df_node_feature$node_text, "\n",
+    str_extract(string = df_node_feature$node_label,pattern = "(All)|\\w\\d+$"), 
+    "\n",
     round(100 * df_node_feature$node_size^2 / SIZE_SCALING_FACTOR, 1),
     " %"
   )
+```
 
+## Plot
+
+### Design 1: Area encoding (circle)
+
+```{r}
 p_1 <-
   ggtree(sample_tree_v2, branch.length = "none", layout = "ellipse") %<+%
   # ggtree(sample_tree_v2, branch.length = "none", layout = "fan",open.angle = 30) %<+%
@@ -384,7 +388,9 @@ df_node_feature_a <-
   mutate(
     node_size = prop*SIZE_SCALING_FACTOR, 
     node_text = paste0(
-      node_label, "\n",
+      str_extract(string = node_label,
+                  pattern = "(All)|\\w\\d+$"),
+      "\n",
       round(node_size, 1),
       " %"
     )
@@ -448,3 +454,10 @@ ggtree(tree_a, branch.length = "none", layout = "dendrogram") %<+%
   )
 p_a
 ```
+
+```{r}
+# for interaction
+library(plotly)
+ggplotly(p_a,tooltip="size")
+```
+
