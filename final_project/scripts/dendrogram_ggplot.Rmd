@@ -48,6 +48,7 @@ FILE_PLOT_A_WITH_TEXT <- file.path(PATH_PLOT, "plot_a_with_text.png")
 FILE_PLOT_A_NO_TEXT <- file.path(PATH_PLOT, "plot_a_no_text.png")
 FILE_PLOT_B_WITH_TEXT <- file.path(PATH_PLOT, "plot_b_with_text.png")
 FILE_PLOT_B_NO_TEXT <- file.path(PATH_PLOT, "plot_b_no_text.png")
+FILE_PLOT_B_HTML<- file.path(PATH_PLOT, "plotly_dendrogram_interactive_b.html")
 ```
 
 # Sample Trees-v0
@@ -802,3 +803,10 @@ options(browser = "false")
 ```{r}
 api_create(plotly_b, filename = "CS765_plotly_b")
 ```
+
+#### Save as a local HTML file
+
+```{r}
+htmlwidgets::saveWidget(as_widget(plotly_b), FILE_PLOT_B_HTML)
+```
+
