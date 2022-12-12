@@ -576,6 +576,19 @@ COLOR_FEMALE_MIDDLE <- COLOR_FEMALE
 COLOR_FEMALE_OLD <- "#c55a11"
 
 SIZE_SCALING_FACTOR <- 1
+
+# DF_LABEL_DECODE = data.frame(
+#   raw_code = c("All",
+#                "S1","S2",
+#                "A1","A2","A3",
+#                "C1","C2",
+#                "E1","E2","E3"),
+#   decoded_code = c("All",
+#                    "Male","Female",
+#                    "<30","[30,65]",">65",
+#                    "0",">0",
+#                    "E","U","N")
+# )
 df_node_feature_b <-
   df_hist_b %>%
   mutate(
@@ -593,17 +606,20 @@ df_node_feature_b <-
       node_label_abrv == "A2" ~ "[30,65]",
       node_label_abrv == "A3" ~ ">65",
       node_label_abrv == "C1" ~ "0",
-      node_label_abrv == "C2" ~ ">0",      
-      node_label_abrv == "E1" ~ "EMP",
-      node_label_abrv == "E2" ~ "UMP",
-      node_label_abrv == "E3" ~ "NLF",
+      node_label_abrv == "C2" ~ ">0",
+      node_label_abrv == "E1" ~ "E",
+      node_label_abrv == "E2" ~ "U",
+      node_label_abrv == "E3" ~ "N"
+      # node_label_abrv == "E1" ~ "EMP",
+      # node_label_abrv == "E2" ~ "UMP",
+      # node_label_abrv == "E3" ~ "NLF",
     ),
     node_text = paste0(
       node_label_readable,
       "\n",
       node_prop_abrv,
       " %"
-    ),    
+    ),
     node_color = case_when(
       node_label == "All" ~ COLOR_ALL,
       node_label == "S1" ~ COLOR_MALE,
@@ -689,30 +705,34 @@ p_b <-
 ```
 
 ```{r}
-ANNOTATE_TEXT_SIZE = 5
-g_b_annotated = 
+ANNOTATE_TEXT_SIZE <- 5
+g_b_annotated <-
   p_b +
-  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1)+
-  annotate("text", 
-           x = -3,
-           y = -3, size = ANNOTATE_TEXT_SIZE,
-           label = "Sex")+
-  annotate("text", 
-           x = -2,
-           y = -3, size = ANNOTATE_TEXT_SIZE,
-           label = "Age")+
-  annotate("text", 
-           x = -1,
-           y = -3, size = ANNOTATE_TEXT_SIZE,
-           label = "# Children")+
-  annotate("text", 
-           x = 0,
-           y = -3, size = ANNOTATE_TEXT_SIZE,
-           label = "Employment\nStatus")  
+  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
+  annotate("text",
+    x = -3,
+    y = -3, size = ANNOTATE_TEXT_SIZE,
+    label = "Sex"
+  ) +
+  annotate("text",
+    x = -2,
+    y = -3, size = ANNOTATE_TEXT_SIZE,
+    label = "Age"
+  ) +
+  annotate("text",
+    x = -1,
+    y = -3, size = ANNOTATE_TEXT_SIZE,
+    label = "# Children"
+  ) +
+  annotate("text",
+    x = 0,
+    y = -3, size = ANNOTATE_TEXT_SIZE,
+    label = "Employment\nStatus"
+  )
 ggsave(
   plot = g_b_annotated,
   filename = FILE_PLOT_B_WITH_TEXT,
-  width = 30.81*1.5, height = 19.03*1.5, units = "cm"
+  width = 30.81 * 1.5, height = 19.03 * 1.5, units = "cm"
 )
 g_b_annotated
 ```
@@ -730,31 +750,55 @@ p_b
 # ggplotly(p_b +
 #  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1)
 #  ,tooltip="size")
-ggplotly(
-  p_b +
-  annotate("text", 
-           x = -3,
-           y = -3, size = ANNOTATE_TEXT_SIZE,
-           label = "Sex")+
-  annotate("text", 
-           x = -2,
-           y = -3, size = ANNOTATE_TEXT_SIZE,
-           label = "Age")+
-  annotate("text", 
-           x = -1,
-           y = -3, size = ANNOTATE_TEXT_SIZE,
-           label = "# Children")+
-  annotate("text", 
-           x = 0,
-           y = -3, size = ANNOTATE_TEXT_SIZE,
-           label = "Employment\nStatus") +    
-  geom_text(
-    aes(
-      label = node_label_readable,
-      text = paste(node_prop_abrv, "%")
-    ),
-    hjust = -0.2, vjust = 1
-  ),
-  tooltip = c("text")
-)
+plotly_b <-
+  ggplotly(
+    p_b +
+      annotate("text",
+        x = -3,
+        y = -3, size = ANNOTATE_TEXT_SIZE,
+        label = "Sex"
+      ) +
+      annotate("text",
+        x = -2,
+        y = -3, size = ANNOTATE_TEXT_SIZE,
+        label = "Age"
+      ) +
+      annotate("text",
+        x = -1,
+        y = -3, size = ANNOTATE_TEXT_SIZE,
+        label = "# Children"
+      ) +
+      annotate("text",
+        x = 0,
+        y = -3, size = ANNOTATE_TEXT_SIZE,
+        label = "Employment\nStatus"
+      ) +
+      geom_text(
+        aes(
+          label = paste0(node_label_readable,"\n",
+                         node_prop_abrv),
+          text = paste(node_prop_abrv, "%")
+        ),
+        hjust = -0.2, vjust = 1
+      ),
+    tooltip = c("text")
+  )
+plotly_b
+```
+
+#### Upload the plot to chart-studtio
+
+- https://plotly.com/r/getting-started-with-chart-studio/
+
+```{r}
+Sys.setenv("plotly_username" = "vimchiz")
+Sys.setenv("plotly_api_key" = "k3x5GH7VVwJ6LClgE7FX")
+# Suppress auto open behavior:
+options(browser = "false")
+```
+
+- https://chart-studio.plotly.com/~vimchiz/40/#/
+
+```{r}
+api_create(plotly_b, filename = "CS765_plotly_b")
 ```
