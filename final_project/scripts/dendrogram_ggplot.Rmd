@@ -15,6 +15,7 @@ library(tidyr)
 library(stringr)
 library(ggplot2)
 library(ggtree)
+library(ggrepel)
 # if (!require("BiocManager", quietly = TRUE))
 #     install.packages("BiocManager")
 #
@@ -182,7 +183,12 @@ create_tree_string_newick_one_layer <- function(input_string_split, node_names_t
 ```{r}
 if (!file.exists(FILE_SAMPLE_TREE_V2)) {
   # create the string pragmatically
-  list_name_levels = list(c("All"),c("S1","S2"),c("A1","A2","A3"),c("E1","E2","E3"))
+  list_name_levels = list(c("All"),
+                          c("S1","S2"),
+                          c("A1","A2","A3"),
+                          c("E1","E2","E3")
+                          # c("I1","I2","I3")
+                          )
   str_sample_tree_v2 = create_tree_string_newick(list_name_levels)
   write.table(str_sample_tree_v2, FILE_SAMPLE_TREE_V2, col.names = F, row.names = F, quote = F)  
 }
@@ -198,22 +204,41 @@ sample_tree_v2 <- read.tree(FILE_SAMPLE_TREE_V2)
 
 ```{r}
 num_nodes = length(c(sample_tree_v2$node.label, sample_tree_v2$tip.label))
+SIZE_SCALING_FACTOR = 1000
 df_node_feature <- data.frame(
   node_label = c(sample_tree_v2$node.label, sample_tree_v2$tip.label),
   node_text = c(sample_tree_v2$node.label, sample_tree_v2$tip.label),
-  node_size = seq(1, num_nodes)*0.5
+  # sqrt because the size is defined by area while ggplot scale both the width and height by the size
+  node_size = sqrt(c(1,1/2,1/4,1/4,1/4,1/2,1/4,1/4,1/4,
+                rep(1/8,times = length(sample_tree_v2$tip.label)))*SIZE_SCALING_FACTOR)
+  # node_size = sqrt(seq(num_nodes,1)*0.05)
 )
 
-p <- ggtree(sample_tree_v2, branch.length = "none", layout = "dendrogram") %<+%
+# add size to the text to show
+df_node_feature$node_text = 
+  paste0(
+    df_node_feature$node_text,"\n",
+    100*round(df_node_feature$node_size^2/SIZE_SCALING_FACTOR,2),
+    " %"
+    )
+
+p <- 
+  ggtree(sample_tree_v2, branch.length = "none", layout = "ellipse") %<+%
+  # ggtree(sample_tree_v2, branch.length = "none", layout = "fan",open.angle = 30) %<+%
   df_node_feature +
-  geom_point(aes(size = node_size), shape = "square") +
-  geom_text(aes(label = node_text), hjust = -0.2) +
+  geom_point(aes(size = node_size), shape = "square",alpha=0.5) +
+  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
+  scale_x_continuous(expand = c(0.1,0.1))+
+  scale_y_continuous(expand = c(0.1,0.1))+
+  # geom_text_repel(aes(label = node_text), hjust = -0.2) +  
   # ensure the radius encodes the size
-  scale_size_identity(guide = "legend"
+  scale_size_identity(
+                      # guide = "legend"
                       # breaks = sqrt(c(5,10,20,40)),
                       # labels = c(5,10,20,40)
                       ) +
-  coord_flip(clip = 'off')+
+  layout_dendrogram()+
+  # coord_flip(clip = 'off')+
   # coord_cartesian(clip = 'off') +
   theme(
     legend.position = "bottom"
