@@ -20,6 +20,8 @@ library(ggrepel)
 #     install.packages("BiocManager")
 #
 # BiocManager::install("ggtree")
+# for interaction
+library(plotly)
 ```
 
 
@@ -32,6 +34,7 @@ PATH_ROOT <- "/Users/vimchiz/github_local/PhD_courses/CS765"
 PATH_ATUSSUM_RAW_DATA <- file.path(PATH_ROOT, "DE7", "data")
 PATH_SAMPLE_TREE <- file.path(PATH_ROOT, "final_project", "data")
 PATH_TREE <- file.path(PATH_ROOT, "final_project", "data")
+PATH_PLOT <- file.path(PATH_ROOT, "final_project", "presentation")
 
 # File
 FILE_ATUSSUM_RAW_DATA <- file.path(PATH_ATUSSUM_RAW_DATA, "atussum_0321.csv")
@@ -41,6 +44,10 @@ FILE_SAMPLE_TREE_V2 <- file.path(PATH_SAMPLE_TREE, "sample_tree_newick_v2.nwk")
 FILE_TREE_A <- file.path(PATH_TREE, "tree_newick_a.nwk")
 FILE_TREE_B <- file.path(PATH_TREE, "tree_newick_b.nwk")
 FILE_TREE_C <- file.path(PATH_TREE, "tree_newick_c.nwk")
+FILE_PLOT_A_WITH_TEXT <- file.path(PATH_PLOT, "plot_a_with_text.png")
+FILE_PLOT_A_NO_TEXT <- file.path(PATH_PLOT, "plot_a_no_text.png")
+FILE_PLOT_B_WITH_TEXT <- file.path(PATH_PLOT, "plot_b_with_text.png")
+FILE_PLOT_B_NO_TEXT <- file.path(PATH_PLOT, "plot_b_no_text.png")
 ```
 
 # Sample Trees-v0
@@ -215,8 +222,8 @@ df_node_feature <- data.frame(
   node_label = c(sample_tree_v2$node.label, sample_tree_v2$tip.label),
   # sqrt because the size is defined by area while ggplot scale both the width and height by the size
   node_size = sqrt(c(
-    1, 1 / 2, 1 / 4, 1 / 4, 1 / 4, 1 / 2, 1 / 4, 1 / 4, 1 / 4,
-    rep(1 / 8, times = length(sample_tree_v2$tip.label))
+    1, 1 / 2, 1 / 6, 1 / 6, 1 / 6, 1 / 2, 1 / 6, 1 / 6, 1 / 6,
+    rep(1 / 18, times = length(sample_tree_v2$tip.label))
   ) * SIZE_SCALING_FACTOR)
   # node_size = sqrt(seq(num_nodes,1)*0.05)
 )
@@ -224,7 +231,7 @@ df_node_feature <- data.frame(
 # add size to the text to show
 df_node_feature$node_text <-
   paste0(
-    str_extract(string = df_node_feature$node_label,pattern = "(All)|\\w\\d+$"), 
+    str_extract(string = df_node_feature$node_label, pattern = "(All)|\\w\\d+$"),
     "\n",
     round(100 * df_node_feature$node_size^2 / SIZE_SCALING_FACTOR, 1),
     " %"
@@ -237,7 +244,9 @@ df_node_feature$node_text <-
 
 ```{r}
 p_1 <-
-  ggtree(sample_tree_v2, branch.length = "none", layout = "ellipse") %<+%
+  # ggtree(sample_tree_v2, branch.length = "none", layout = "circular") %<+%
+  ggtree(sample_tree_v2, branch.length = "none", layout = "dendrogram") %<+%
+  # ggtree(sample_tree_v2, branch.length = "none", layout = "ellipse") %<+%
   # ggtree(sample_tree_v2, branch.length = "none", layout = "fan",open.angle = 30) %<+%
   df_node_feature +
   geom_point(aes(size = node_size), shape = "circle", alpha = 0.5) +
@@ -258,6 +267,10 @@ p_1 <-
     legend.position = "bottom"
   )
 p_1
+```
+
+```{r}
+ggplotly(p_1, tooltip = "size")
 ```
 
 ### Design 2: Area+Length encoding (Rectangle)
@@ -325,14 +338,14 @@ df_real <-
       employ_status %in% c(5) ~ "E3"
     )),
     new_age = factor(case_when(
-      age <= 30 ~ "A1",
-      age > 30 & age <= 65 ~ "A2",
+      age < 30 ~ "A1",
+      age >= 30 & age <= 65 ~ "A2",
       age > 65 ~ "A3"
     )),
     new_num_children = factor(case_when(
       num_children == 0 ~ "C1",
-      num_children > 0 & num_children < 3 ~ "C2",
-      num_children >= 3 ~ "C3"
+      num_children > 0 ~ "C2",
+      # num_children >= 3 ~ "C3"
     )),
     new_sex = factor(case_when(
       sex == 1 ~ "S1",
@@ -374,31 +387,55 @@ for (i_group_vars in 1:length(list_group_vars_a)) {
 df_hist_a <- bind_rows(list_df_hist_a)
 
 # add the root node
-df_hist_a = 
-  df_hist_a%>%
-  add_row(node_label="All",prop = 100,count = nrow(df_real))
+df_hist_a <-
+  df_hist_a %>%
+  add_row(node_label = "All", prop = 100, count = nrow(df_real))
 ```
 
 ### Generate the tree features
 
 ```{r}
-SIZE_SCALING_FACTOR = 1
+COLOR_ALL <- "#404040"
+COLOR_MALE <- "#8faadc"
+COLOR_FEMALE <- "#f4b183"
+COLOR_MALE_YOUNG <- "#b4c7e7"
+COLOR_MALE_MIDDLE <- COLOR_MALE
+COLOR_MALE_OLD <- "#2f5597"
+COLOR_FEMALE_YOUNG <- "#f8cbad"
+COLOR_FEMALE_MIDDLE <- COLOR_FEMALE
+COLOR_FEMALE_OLD <- "#c55a11"
+
+SIZE_SCALING_FACTOR <- 1
 df_node_feature_a <-
   df_hist_a %>%
   mutate(
-    node_size = prop*SIZE_SCALING_FACTOR, 
+    node_size = prop * SIZE_SCALING_FACTOR,
     node_text = paste0(
-      str_extract(string = node_label,
-                  pattern = "(All)|\\w\\d+$"),
+      str_extract(
+        string = node_label,
+        pattern = "(All)|\\w\\d+$"
+      ),
       "\n",
       round(node_size, 1),
       " %"
+    ),
+    node_color = case_when(
+      node_label == "All" ~ COLOR_ALL,
+      node_label == "S1" ~ COLOR_MALE,
+      node_label == "S2" ~ COLOR_FEMALE,
+      grepl(pattern = "S1A1", x = node_label) ~ COLOR_MALE_YOUNG,
+      grepl(pattern = "S1A2", x = node_label) ~ COLOR_MALE_MIDDLE,
+      grepl(pattern = "S1A3", x = node_label) ~ COLOR_MALE_OLD,
+      grepl(pattern = "S2A1", x = node_label) ~ COLOR_FEMALE_YOUNG,
+      grepl(pattern = "S2A2", x = node_label) ~ COLOR_FEMALE_MIDDLE,
+      grepl(pattern = "S2A3", x = node_label) ~ COLOR_FEMALE_OLD
     )
-  )%>%
+  ) %>%
   select(
     node_label,
     node_size,
-    node_text
+    node_text,
+    node_color
   )
 ```
 
@@ -430,13 +467,22 @@ tree_a <- read.tree(FILE_TREE_A)
 ```{r}
 p_a <-
   # ggtree(tree_a, branch.length = "none", layout = "ellipse") %<+%
-ggtree(tree_a, branch.length = "none", layout = "dendrogram") %<+%  
-# ggtree(tree_a, branch.length = "none", layout = "circular") %<+%
-# ggtree(tree_a, branch.length = "none", layout = "fan",open.angle = 120) %<+%    
+  ggtree(tree_a, branch.length = "none", layout = "dendrogram") %<+%
+  # ggtree(tree_a, branch.length = "none", layout = "circular") %<+%
+  # ggtree(tree_a, branch.length = "none", layout = "fan",open.angle = 120) %<+%
   df_node_feature_a +
-  geom_tile(aes(height = node_size * 0.05), width = 0.1, colour = "grey50", alpha = 0.5) +
+  geom_tile(
+    aes(
+      height = node_size * 0.05,
+      fill = node_color
+    ),
+    width = 0.15
+    # colour = "grey50",
+    # alpha = 0.5
+  ) +
+  scale_fill_identity() +
   # geom_point(aes(size = node_size), shape = "square",alpha=0.5) +
-  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
+  # geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
   scale_x_continuous(expand = c(0.1, 0.1)) +
   scale_y_continuous(expand = c(0.1, 0.1)) +
   # geom_text_repel(aes(label = node_text), hjust = -0.2) +
@@ -452,12 +498,263 @@ ggtree(tree_a, branch.length = "none", layout = "dendrogram") %<+%
   theme(
     legend.position = "bottom"
   )
+```
+
+```{r}
+g <- p_a +
+  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1)
+ggsave(plot = g, filename = FILE_PLOT_A_WITH_TEXT, width = 30.81, height = 19.03, units = "cm")
+g
+```
+
+```{r}
+ggsave(
+  plot = p_a,
+  filename = FILE_PLOT_A_NO_TEXT,
+  width = 30.81, height = 19.03, units = "cm"
+)
 p_a
 ```
 
 ```{r}
-# for interaction
-library(plotly)
-ggplotly(p_a,tooltip="size")
+ggplotly(
+  p_a +
+    geom_text(aes(label = node_text), hjust = -0.2, vjust = 1),
+  tooltip = "size"
+)
 ```
 
+## design-b) sex-age-children-employ
+
+### summarize the group distributions
+
+```{r}
+# iterative histogram (the proportion of people at each level)
+list_group_vars_b <- c("new_sex", "new_age", "new_num_children", "new_employ_status")
+
+list_df_hist_b <- list()
+
+for (i_group_vars in 1:length(list_group_vars_b)) {
+  group_vars <- list_group_vars_b[1:i_group_vars]
+
+  # the level in the tree (root is 1)
+  i_level <- i_group_vars + 1
+  df_hist_this_level <-
+    df_real %>%
+    group_by(across(all_of(group_vars))) %>%
+    summarise(
+      count = n(),
+      prop = 100 * count / nrow(df_real)
+    ) %>%
+    mutate(i_level = i_level)
+
+  df_hist_this_level$node_label <-
+    apply(df_hist_this_level[, group_vars], 1, function(row) {
+      paste(row, collapse = "")
+    })
+  list_df_hist_b[[i_group_vars]] <- df_hist_this_level
+}
+df_hist_b <- bind_rows(list_df_hist_b)
+
+# add the root node
+df_hist_b <-
+  df_hist_b %>%
+  add_row(node_label = "All", prop = 100, count = nrow(df_real))
+```
+
+### Generate the tree features
+
+```{r}
+COLOR_ALL <- "#8c8c8c"
+COLOR_MALE <- "#8faadc"
+COLOR_FEMALE <- "#f4b183"
+COLOR_MALE_YOUNG <- "#b4c7e7"
+COLOR_MALE_MIDDLE <- COLOR_MALE
+COLOR_MALE_OLD <- "#2f5597"
+COLOR_FEMALE_YOUNG <- "#f8cbad"
+COLOR_FEMALE_MIDDLE <- COLOR_FEMALE
+COLOR_FEMALE_OLD <- "#c55a11"
+
+SIZE_SCALING_FACTOR <- 1
+df_node_feature_b <-
+  df_hist_b %>%
+  mutate(
+    node_size = prop * SIZE_SCALING_FACTOR,
+    node_label_abrv = str_extract(
+      string = node_label,
+      pattern = "(All)|\\w\\d+$"
+    ),
+    node_prop_abrv = round(prop, 1),
+    node_label_readable = case_when(
+      node_label_abrv == "All" ~ "All",
+      node_label_abrv == "S1" ~ "Male",
+      node_label_abrv == "S2" ~ "Female",
+      node_label_abrv == "A1" ~ "<30",
+      node_label_abrv == "A2" ~ "[30,65]",
+      node_label_abrv == "A3" ~ ">65",
+      node_label_abrv == "C1" ~ "0",
+      node_label_abrv == "C2" ~ ">0",      
+      node_label_abrv == "E1" ~ "EMP",
+      node_label_abrv == "E2" ~ "UMP",
+      node_label_abrv == "E3" ~ "NLF",
+    ),
+    node_text = paste0(
+      node_label_readable,
+      "\n",
+      node_prop_abrv,
+      " %"
+    ),    
+    node_color = case_when(
+      node_label == "All" ~ COLOR_ALL,
+      node_label == "S1" ~ COLOR_MALE,
+      node_label == "S2" ~ COLOR_FEMALE,
+      grepl(pattern = "S1A1", x = node_label) ~ COLOR_MALE_YOUNG,
+      grepl(pattern = "S1A2", x = node_label) ~ COLOR_MALE_MIDDLE,
+      grepl(pattern = "S1A3", x = node_label) ~ COLOR_MALE_OLD,
+      grepl(pattern = "S2A1", x = node_label) ~ COLOR_FEMALE_YOUNG,
+      grepl(pattern = "S2A2", x = node_label) ~ COLOR_FEMALE_MIDDLE,
+      grepl(pattern = "S2A3", x = node_label) ~ COLOR_FEMALE_OLD
+    )
+  ) %>%
+  select(
+    node_label,
+    node_label_abrv,
+    node_label_readable,
+    node_prop_abrv,
+    node_size,
+    node_text,
+    node_color
+  )
+```
+
+### Generate the tree structure
+
+```{r}
+if (!file.exists(FILE_TREE_B)) {
+  # create the string pragmatically
+  list_name_levels <- list(
+    c("All"),
+    c("S1", "S2"),
+    c("A1", "A2", "A3"),
+    c("C1", "C2"),
+    c("E1", "E2", "E3")
+  )
+  str_tree <- create_tree_string_newick(list_name_levels)
+  write.table(str_tree, FILE_TREE_B, col.names = F, row.names = F, quote = F)
+}
+```
+
+### Read files
+
+```{r}
+tree_b <- read.tree(FILE_TREE_B)
+```
+
+### Plot: Area+Length encoding (Rectangle)
+
+```{r}
+p_b <-
+  # ggtree(tree_a, branch.length = "none", layout = "ellipse") %<+%
+  ggtree(tree_b, branch.length = "none", layout = "dendrogram") %<+%
+  # ggtree(tree_a, branch.length = "none", layout = "circular") %<+%
+  # ggtree(tree_a, branch.length = "none", layout = "fan",open.angle = 120) %<+%
+  df_node_feature_b +
+  geom_tile(
+    aes(
+      height = node_size * 0.10,
+      fill = node_color
+    ),
+    width = 0.15
+    # colour = "grey50",
+    # alpha = 0.5
+  ) +
+  scale_fill_identity() +
+  # geom_point(aes(size = node_size), shape = "square",alpha=0.5) +
+  # geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
+  scale_x_continuous(expand = c(0.1, 0.1)) +
+  scale_y_continuous(expand = c(0.1, 0.1)) +
+  # geom_text_repel(aes(label = node_text), hjust = -0.2) +
+  # ensure the radius encodes the size
+  scale_size_identity(
+    # guide = "legend"
+    # breaks = sqrt(c(5,10,20,40)),
+    # labels = c(5,10,20,40)
+  ) +
+  layout_dendrogram() +
+  # coord_flip(clip = 'off')+
+  # coord_cartesian(clip = 'off') +
+  theme(
+    legend.position = "none"
+  )
+```
+
+```{r}
+ANNOTATE_TEXT_SIZE = 5
+g_b_annotated = 
+  p_b +
+  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1)+
+  annotate("text", 
+           x = -3,
+           y = -3, size = ANNOTATE_TEXT_SIZE,
+           label = "Sex")+
+  annotate("text", 
+           x = -2,
+           y = -3, size = ANNOTATE_TEXT_SIZE,
+           label = "Age")+
+  annotate("text", 
+           x = -1,
+           y = -3, size = ANNOTATE_TEXT_SIZE,
+           label = "# Children")+
+  annotate("text", 
+           x = 0,
+           y = -3, size = ANNOTATE_TEXT_SIZE,
+           label = "Employment\nStatus")  
+ggsave(
+  plot = g_b_annotated,
+  filename = FILE_PLOT_B_WITH_TEXT,
+  width = 30.81*1.5, height = 19.03*1.5, units = "cm"
+)
+g_b_annotated
+```
+
+```{r}
+p_b +
+  geom_text(aes(label = node_label_readable), hjust = -0.2, vjust = 1)
+```
+
+```{r}
+p_b
+```
+
+```{r}
+# ggplotly(p_b +
+#  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1)
+#  ,tooltip="size")
+ggplotly(
+  p_b +
+  annotate("text", 
+           x = -3,
+           y = -3, size = ANNOTATE_TEXT_SIZE,
+           label = "Sex")+
+  annotate("text", 
+           x = -2,
+           y = -3, size = ANNOTATE_TEXT_SIZE,
+           label = "Age")+
+  annotate("text", 
+           x = -1,
+           y = -3, size = ANNOTATE_TEXT_SIZE,
+           label = "# Children")+
+  annotate("text", 
+           x = 0,
+           y = -3, size = ANNOTATE_TEXT_SIZE,
+           label = "Employment\nStatus") +    
+  geom_text(
+    aes(
+      label = node_label_readable,
+      text = paste(node_prop_abrv, "%")
+    ),
+    hjust = -0.2, vjust = 1
+  ),
+  tooltip = c("text")
+)
+```
