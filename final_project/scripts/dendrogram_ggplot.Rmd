@@ -48,7 +48,7 @@ FILE_PLOT_A_WITH_TEXT <- file.path(PATH_PLOT, "plot_a_with_text.png")
 FILE_PLOT_A_NO_TEXT <- file.path(PATH_PLOT, "plot_a_no_text.png")
 FILE_PLOT_B_WITH_TEXT <- file.path(PATH_PLOT, "plot_b_with_text.png")
 FILE_PLOT_B_NO_TEXT <- file.path(PATH_PLOT, "plot_b_no_text.png")
-FILE_PLOT_B_HTML<- file.path(PATH_PLOT, "plotly_dendrogram_interactive_b.html")
+FILE_PLOT_B_HTML <- file.path(PATH_PLOT, "plotly_dendrogram_interactive_b.html")
 ```
 
 # Sample Trees-v0
@@ -396,16 +396,27 @@ df_hist_a <-
 ### Generate the tree features
 
 ```{r}
-COLOR_ALL <- "#404040"
-COLOR_MALE <- "#8faadc"
-COLOR_FEMALE <- "#f4b183"
-COLOR_MALE_YOUNG <- "#b4c7e7"
-COLOR_MALE_MIDDLE <- COLOR_MALE
-COLOR_MALE_OLD <- "#2f5597"
-COLOR_FEMALE_YOUNG <- "#f8cbad"
-COLOR_FEMALE_MIDDLE <- COLOR_FEMALE
-COLOR_FEMALE_OLD <- "#c55a11"
+COLOR_ALL <- "#8c8c8c"
+COLOR_MALE <- rgb(0, 0, 255, maxColorValue = 255)
+COLOR_FEMALE <- rgb(255, 64, 64, maxColorValue = 255)
+COLOR_YOUNG <- rgb(255, 215, 0, maxColorValue = 255)
+COLOR_MIDDLE <- rgb(0, 201, 87, maxColorValue = 255)
+COLOR_OLD <- rgb(153, 50, 204, maxColorValue = 255)
+COLOR_EMP <- rgb(255, 128, 0, maxColorValue = 255)
+COLOR_UMP <- rgb(0, 245, 255, maxColorValue = 255)
+COLOR_NLF <- rgb(255, 0, 255, maxColorValue = 255)
 
+# COLOR_ALL <- "#404040"
+# COLOR_MALE <- "#8faadc"
+# COLOR_FEMALE <- "#f4b183"
+# COLOR_MALE_YOUNG <- "#b4c7e7"
+# COLOR_MALE_MIDDLE <- COLOR_MALE
+# COLOR_MALE_OLD <- "#2f5597"
+# COLOR_FEMALE_YOUNG <- "#f8cbad"
+# COLOR_FEMALE_MIDDLE <- COLOR_FEMALE
+# COLOR_FEMALE_OLD <- "#c55a11"
+
+# RGB(0,0,255)', 'RGB(255,64,64)', 'RGB(255,215,0)', 'RGB(0,201,87)', 'RGB(153,50,204)', 'RGB(255,128,0)', 'RGB(0,245,255)', 'RGB(255,0,255)', 'RGB(139,62,47)', 'RGB(127,255,212)', 'RGB(255,235,205)', 'RGB(151,255,255)', 'RGB(255,182,193)', 'RGB(25,25,112)', 'RGB(105,139,34)', 'RGB(139,0,0)', 'RGB(139,139,0)', 'RGB(56,142,142)', 'RGB(128,128,105)', 'RGB(120,120,120)
 SIZE_SCALING_FACTOR <- 1
 df_node_feature_a <-
   df_hist_a %>%
@@ -424,13 +435,20 @@ df_node_feature_a <-
       node_label == "All" ~ COLOR_ALL,
       node_label == "S1" ~ COLOR_MALE,
       node_label == "S2" ~ COLOR_FEMALE,
-      grepl(pattern = "S1A1", x = node_label) ~ COLOR_MALE_YOUNG,
-      grepl(pattern = "S1A2", x = node_label) ~ COLOR_MALE_MIDDLE,
-      grepl(pattern = "S1A3", x = node_label) ~ COLOR_MALE_OLD,
-      grepl(pattern = "S2A1", x = node_label) ~ COLOR_FEMALE_YOUNG,
-      grepl(pattern = "S2A2", x = node_label) ~ COLOR_FEMALE_MIDDLE,
-      grepl(pattern = "S2A3", x = node_label) ~ COLOR_FEMALE_OLD
+      grepl(pattern = "A1$", x = node_label) ~ COLOR_YOUNG,
+      grepl(pattern = "A2$", x = node_label) ~ COLOR_MIDDLE,
+      grepl(pattern = "A3$", x = node_label) ~ COLOR_OLD,
+      grepl(pattern = "E1$", x = node_label) ~ COLOR_EMP,
+      grepl(pattern = "E2$", x = node_label) ~ COLOR_UMP,
+      grepl(pattern = "E3$", x = node_label) ~ COLOR_NLF
     )
+    #   grepl(pattern = "S1A1", x = node_label) ~ COLOR_MALE_YOUNG,
+    #   grepl(pattern = "S1A2", x = node_label) ~ COLOR_MALE_MIDDLE,
+    #   grepl(pattern = "S1A3", x = node_label) ~ COLOR_MALE_OLD,
+    #   grepl(pattern = "S2A1", x = node_label) ~ COLOR_FEMALE_YOUNG,
+    #   grepl(pattern = "S2A2", x = node_label) ~ COLOR_FEMALE_MIDDLE,
+    #   grepl(pattern = "S2A3", x = node_label) ~ COLOR_FEMALE_OLD
+    # )
   ) %>%
   select(
     node_label,
@@ -567,14 +585,24 @@ df_hist_b <-
 
 ```{r}
 COLOR_ALL <- "#8c8c8c"
-COLOR_MALE <- "#8faadc"
-COLOR_FEMALE <- "#f4b183"
-COLOR_MALE_YOUNG <- "#b4c7e7"
-COLOR_MALE_MIDDLE <- COLOR_MALE
-COLOR_MALE_OLD <- "#2f5597"
-COLOR_FEMALE_YOUNG <- "#f8cbad"
-COLOR_FEMALE_MIDDLE <- COLOR_FEMALE
-COLOR_FEMALE_OLD <- "#c55a11"
+COLOR_MALE <- rgb(0, 0, 255, maxColorValue = 255)
+COLOR_FEMALE <- rgb(255, 64, 64, maxColorValue = 255)
+COLOR_YOUNG <- rgb(255, 215, 0, maxColorValue = 255)
+COLOR_MIDDLE <- rgb(0, 201, 87, maxColorValue = 255)
+COLOR_OLD <- rgb(153, 50, 204, maxColorValue = 255)
+COLOR_NO_CHILD <- rgb(139, 62, 47, maxColorValue = 255)
+COLOR_WITH_CHILD <- rgb(127, 255, 212, maxColorValue = 255)
+COLOR_EMP <- rgb(255, 128, 0, maxColorValue = 255)
+COLOR_UMP <- rgb(0, 245, 255, maxColorValue = 255)
+COLOR_NLF <- rgb(255, 0, 255, maxColorValue = 255)
+
+
+COLOR_MALE_YOUNG <- COLOR_YOUNG
+COLOR_MALE_MIDDLE <- COLOR_MIDDLE
+COLOR_MALE_OLD <- COLOR_OLD
+COLOR_FEMALE_YOUNG <- COLOR_YOUNG
+COLOR_FEMALE_MIDDLE <- COLOR_MIDDLE
+COLOR_FEMALE_OLD <- COLOR_OLD
 
 SIZE_SCALING_FACTOR <- 1
 
@@ -625,12 +653,14 @@ df_node_feature_b <-
       node_label == "All" ~ COLOR_ALL,
       node_label == "S1" ~ COLOR_MALE,
       node_label == "S2" ~ COLOR_FEMALE,
-      grepl(pattern = "S1A1", x = node_label) ~ COLOR_MALE_YOUNG,
-      grepl(pattern = "S1A2", x = node_label) ~ COLOR_MALE_MIDDLE,
-      grepl(pattern = "S1A3", x = node_label) ~ COLOR_MALE_OLD,
-      grepl(pattern = "S2A1", x = node_label) ~ COLOR_FEMALE_YOUNG,
-      grepl(pattern = "S2A2", x = node_label) ~ COLOR_FEMALE_MIDDLE,
-      grepl(pattern = "S2A3", x = node_label) ~ COLOR_FEMALE_OLD
+      grepl(pattern = "A1$", x = node_label) ~ COLOR_YOUNG,
+      grepl(pattern = "A2$", x = node_label) ~ COLOR_MIDDLE,
+      grepl(pattern = "A3$", x = node_label) ~ COLOR_OLD,
+      grepl(pattern = "C1$", x = node_label) ~ COLOR_NO_CHILD,
+      grepl(pattern = "C2$", x = node_label) ~ COLOR_WITH_CHILD,
+      grepl(pattern = "E1$", x = node_label) ~ COLOR_EMP,
+      grepl(pattern = "E2$", x = node_label) ~ COLOR_UMP,
+      grepl(pattern = "E3$", x = node_label) ~ COLOR_NLF
     )
   ) %>%
   select(
@@ -776,8 +806,10 @@ plotly_b <-
       ) +
       geom_text(
         aes(
-          label = paste0(node_label_readable,"\n",
-                         node_prop_abrv),
+          label = paste0(
+            node_label_readable, "\n",
+            node_prop_abrv
+          ),
           text = paste(node_prop_abrv, "%")
         ),
         hjust = -0.2, vjust = 1
@@ -809,4 +841,3 @@ api_create(plotly_b, filename = "CS765_plotly_b")
 ```{r}
 htmlwidgets::saveWidget(as_widget(plotly_b), FILE_PLOT_B_HTML)
 ```
-
