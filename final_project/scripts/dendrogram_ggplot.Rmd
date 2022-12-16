@@ -46,6 +46,7 @@ FILE_TREE_B <- file.path(PATH_TREE, "tree_newick_b.nwk")
 FILE_TREE_C <- file.path(PATH_TREE, "tree_newick_c.nwk")
 FILE_PLOT_A_WITH_TEXT <- file.path(PATH_PLOT, "plot_a_with_text.png")
 FILE_PLOT_A_NO_TEXT <- file.path(PATH_PLOT, "plot_a_no_text.png")
+FILE_PLOT_A_HTML <- file.path(PATH_PLOT, "plotly_dendrogram_interactive_a.html")
 FILE_PLOT_B_WITH_TEXT <- file.path(PATH_PLOT, "plot_b_with_text.png")
 FILE_PLOT_B_NO_TEXT <- file.path(PATH_PLOT, "plot_b_no_text.png")
 FILE_PLOT_B_HTML <- file.path(PATH_PLOT, "plotly_dendrogram_interactive_b.html")
@@ -397,14 +398,16 @@ df_hist_a <-
 
 ```{r}
 COLOR_ALL <- "#8c8c8c"
-COLOR_MALE <- rgb(0, 0, 255, maxColorValue = 255)
-COLOR_FEMALE <- rgb(255, 64, 64, maxColorValue = 255)
-COLOR_YOUNG <- rgb(255, 215, 0, maxColorValue = 255)
-COLOR_MIDDLE <- rgb(0, 201, 87, maxColorValue = 255)
-COLOR_OLD <- rgb(153, 50, 204, maxColorValue = 255)
-COLOR_EMP <- rgb(255, 128, 0, maxColorValue = 255)
-COLOR_UMP <- rgb(0, 245, 255, maxColorValue = 255)
-COLOR_NLF <- rgb(255, 0, 255, maxColorValue = 255)
+COLOR_MALE <- rgb(0, 0, 255, 128, maxColorValue = 255)
+COLOR_FEMALE <- rgb(255, 64, 64, 128, maxColorValue = 255)
+COLOR_YOUNG <- rgb(255, 215, 0, 128, maxColorValue = 255)
+COLOR_MIDDLE <- rgb(0, 201, 87, 128, maxColorValue = 255)
+COLOR_OLD <- rgb(153, 50, 204, 128, maxColorValue = 255)
+COLOR_NO_CHILD <- rgb(139, 62, 47, 128, maxColorValue = 255)
+COLOR_WITH_CHILD <- rgb(127, 255, 212, 128, maxColorValue = 255)
+COLOR_EMP <- rgb(255, 128, 0, 128, maxColorValue = 255)
+COLOR_UMP <- rgb(0, 245, 255, 128, maxColorValue = 255)
+COLOR_NLF <- rgb(255, 0, 255, 128, maxColorValue = 255)
 
 # COLOR_ALL <- "#404040"
 # COLOR_MALE <- "#8faadc"
@@ -420,15 +423,42 @@ COLOR_NLF <- rgb(255, 0, 255, maxColorValue = 255)
 SIZE_SCALING_FACTOR <- 1
 df_node_feature_a <-
   df_hist_a %>%
-  mutate(
+mutate(
     node_size = prop * SIZE_SCALING_FACTOR,
+    node_label_abrv = str_extract(
+      string = node_label,
+      pattern = "(All)|\\w\\d+$"
+    ),
+    node_prop_abrv = round(prop, 1),
+    node_label_readable = case_when(
+      node_label_abrv == "All" ~ "All",
+      node_label_abrv == "S1" ~ "Male",
+      node_label_abrv == "S2" ~ "Female",
+      node_label_abrv == "A1" ~ "<30",
+      node_label_abrv == "A2" ~ "[30,65]",
+      node_label_abrv == "A3" ~ ">65",
+      node_label_abrv == "E1" ~ "E",
+      node_label_abrv == "E2" ~ "U",
+      node_label_abrv == "E3" ~ "N"
+      # node_label_abrv == "E1" ~ "EMP",
+      # node_label_abrv == "E2" ~ "UMP",
+      # node_label_abrv == "E3" ~ "NLF",
+    ),
+    node_label_full = case_when(
+      node_label_abrv == "All" ~ "All",
+      node_label_abrv == "S1" ~ "Male",
+      node_label_abrv == "S2" ~ "Female",
+      node_label_abrv == "A1" ~ "<30 years",
+      node_label_abrv == "A2" ~ "[30,65] years",
+      node_label_abrv == "A3" ~ ">65 years",
+      node_label_abrv == "E1" ~ "Employed",
+      node_label_abrv == "E2" ~ "Unemployed",
+      node_label_abrv == "E3" ~ "Not in Labor Force"
+    ),
     node_text = paste0(
-      str_extract(
-        string = node_label,
-        pattern = "(All)|\\w\\d+$"
-      ),
+      node_label_readable,
       "\n",
-      round(node_size, 1),
+      node_prop_abrv,
       " %"
     ),
     node_color = case_when(
@@ -442,20 +472,17 @@ df_node_feature_a <-
       grepl(pattern = "E2$", x = node_label) ~ COLOR_UMP,
       grepl(pattern = "E3$", x = node_label) ~ COLOR_NLF
     )
-    #   grepl(pattern = "S1A1", x = node_label) ~ COLOR_MALE_YOUNG,
-    #   grepl(pattern = "S1A2", x = node_label) ~ COLOR_MALE_MIDDLE,
-    #   grepl(pattern = "S1A3", x = node_label) ~ COLOR_MALE_OLD,
-    #   grepl(pattern = "S2A1", x = node_label) ~ COLOR_FEMALE_YOUNG,
-    #   grepl(pattern = "S2A2", x = node_label) ~ COLOR_FEMALE_MIDDLE,
-    #   grepl(pattern = "S2A3", x = node_label) ~ COLOR_FEMALE_OLD
-    # )
   ) %>%
   select(
     node_label,
+    node_label_abrv,
+    node_label_readable,
+    node_label_full,
+    node_prop_abrv,
     node_size,
     node_text,
     node_color
-  )
+  )  
 ```
 
 ### Generate the tree structure
@@ -515,7 +542,7 @@ p_a <-
   # coord_flip(clip = 'off')+
   # coord_cartesian(clip = 'off') +
   theme(
-    legend.position = "bottom"
+    legend.position = "none"
   )
 ```
 
@@ -535,12 +562,64 @@ ggsave(
 p_a
 ```
 
+#### Plotly
+
 ```{r}
-ggplotly(
-  p_a +
-    geom_text(aes(label = node_text), hjust = -0.2, vjust = 1),
-  tooltip = "size"
-)
+plotly_a <-
+  ggplotly(
+    p_a +
+      annotate("text",
+        x = -2,
+        y = -3, size = ANNOTATE_TEXT_SIZE,
+        label = "Sex"
+      ) +
+      annotate("text",
+        x = -1,
+        y = -3, size = ANNOTATE_TEXT_SIZE,
+        label = "Age"
+      ) +
+      annotate("text",
+        x = 0,
+        y = -3, size = ANNOTATE_TEXT_SIZE,
+        label = "Employment\nStatus"
+      ) +
+      geom_text(
+        aes(
+          label = paste0(
+            node_label_readable, "\n",
+            node_prop_abrv
+          ),
+          text = paste(node_label_full,"\n",
+                       node_prop_abrv, "%")
+        ),
+        hjust = -0.2, vjust = 1
+      ),
+    tooltip = c("text")
+  )
+plotly_a
+```
+
+#### Upload the plot to chart-studtio
+
+- https://plotly.com/r/getting-started-with-chart-studio/
+
+```{r}
+Sys.setenv("plotly_username" = "vimchiz")
+Sys.setenv("plotly_api_key" = "k3x5GH7VVwJ6LClgE7FX")
+# Suppress auto open behavior:
+options(browser = "false")
+```
+
+- https://chart-studio.plotly.com/~vimchiz/40.embed
+
+```{r}
+api_create(plotly_a, filename = "CS765_plotly_a")
+```
+
+#### Save as a local HTML file
+
+```{r}
+htmlwidgets::saveWidget(as_widget(plotly_a), FILE_PLOT_A_HTML)
 ```
 
 ## design-b) sex-age-children-employ
@@ -585,17 +664,16 @@ df_hist_b <-
 
 ```{r}
 COLOR_ALL <- "#8c8c8c"
-COLOR_MALE <- rgb(0, 0, 255, maxColorValue = 255)
-COLOR_FEMALE <- rgb(255, 64, 64, maxColorValue = 255)
-COLOR_YOUNG <- rgb(255, 215, 0, maxColorValue = 255)
-COLOR_MIDDLE <- rgb(0, 201, 87, maxColorValue = 255)
-COLOR_OLD <- rgb(153, 50, 204, maxColorValue = 255)
-COLOR_NO_CHILD <- rgb(139, 62, 47, maxColorValue = 255)
-COLOR_WITH_CHILD <- rgb(127, 255, 212, maxColorValue = 255)
-COLOR_EMP <- rgb(255, 128, 0, maxColorValue = 255)
-COLOR_UMP <- rgb(0, 245, 255, maxColorValue = 255)
-COLOR_NLF <- rgb(255, 0, 255, maxColorValue = 255)
-
+COLOR_MALE <- rgb(0, 0, 255, 128, maxColorValue = 255)
+COLOR_FEMALE <- rgb(255, 64, 64, 128, maxColorValue = 255)
+COLOR_YOUNG <- rgb(255, 215, 0, 128, maxColorValue = 255)
+COLOR_MIDDLE <- rgb(0, 201, 87, 128, maxColorValue = 255)
+COLOR_OLD <- rgb(153, 50, 204, 128, maxColorValue = 255)
+COLOR_NO_CHILD <- rgb(139, 62, 47, 128, maxColorValue = 255)
+COLOR_WITH_CHILD <- rgb(127, 255, 212, 128, maxColorValue = 255)
+COLOR_EMP <- rgb(255, 128, 0, 128, maxColorValue = 255)
+COLOR_UMP <- rgb(0, 245, 255, 128, maxColorValue = 255)
+COLOR_NLF <- rgb(255, 0, 255, 128, maxColorValue = 255)
 
 COLOR_MALE_YOUNG <- COLOR_YOUNG
 COLOR_MALE_MIDDLE <- COLOR_MIDDLE
@@ -643,6 +721,19 @@ df_node_feature_b <-
       # node_label_abrv == "E2" ~ "UMP",
       # node_label_abrv == "E3" ~ "NLF",
     ),
+    node_label_full = case_when(
+      node_label_abrv == "All" ~ "All",
+      node_label_abrv == "S1" ~ "Male",
+      node_label_abrv == "S2" ~ "Female",
+      node_label_abrv == "A1" ~ "<30 years",
+      node_label_abrv == "A2" ~ "[30,65] years",
+      node_label_abrv == "A3" ~ ">65 years",
+      node_label_abrv == "C1" ~ "0 child",
+      node_label_abrv == "C2" ~ ">0 children",
+      node_label_abrv == "E1" ~ "Employed",
+      node_label_abrv == "E2" ~ "Unemployed",
+      node_label_abrv == "E3" ~ "Not in Labor Force"
+    ),
     node_text = paste0(
       node_label_readable,
       "\n",
@@ -667,6 +758,7 @@ df_node_feature_b <-
     node_label,
     node_label_abrv,
     node_label_readable,
+    node_label_full,
     node_prop_abrv,
     node_size,
     node_text,
@@ -777,6 +869,8 @@ p_b +
 p_b
 ```
 
+#### Plotly
+
 ```{r}
 # ggplotly(p_b +
 #  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1)
@@ -810,7 +904,8 @@ plotly_b <-
             node_label_readable, "\n",
             node_prop_abrv
           ),
-          text = paste(node_prop_abrv, "%")
+          text = paste(node_label_full,"\n",
+                       node_prop_abrv, "%")
         ),
         hjust = -0.2, vjust = 1
       ),
@@ -830,7 +925,7 @@ Sys.setenv("plotly_api_key" = "k3x5GH7VVwJ6LClgE7FX")
 options(browser = "false")
 ```
 
-- https://chart-studio.plotly.com/~vimchiz/40/#/
+- https://chart-studio.plotly.com/~vimchiz/40.embed
 
 ```{r}
 api_create(plotly_b, filename = "CS765_plotly_b")
