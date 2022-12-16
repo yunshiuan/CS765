@@ -14,12 +14,14 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(ggplot2)
-library(ggtree)
 library(ggrepel)
-# if (!require("BiocManager", quietly = TRUE))
-#     install.packages("BiocManager")
-#
-# BiocManager::install("ggtree")
+if (!require("BiocManager", quietly = TRUE)){
+    install.packages("BiocManager")
+    BiocManager::install("ggtree")  
+}
+# for plotting the dendrogram
+library(ggtree)
+
 # for interaction
 library(plotly)
 ```
@@ -30,275 +32,26 @@ library(plotly)
 ```{r}
 # Par
 # Path
-PATH_ROOT <- "/Users/vimchiz/github_local/PhD_courses/CS765"
-PATH_ATUSSUM_RAW_DATA <- file.path(PATH_ROOT, "DE7", "data")
-PATH_SAMPLE_TREE <- file.path(PATH_ROOT, "final_project", "data")
-PATH_TREE <- file.path(PATH_ROOT, "final_project", "data")
-PATH_PLOT <- file.path(PATH_ROOT, "final_project", "presentation")
+# - Please change the root directory of the project to your preference
+PATH_ROOT <- "~/CS765_final_project"
+PATH_ATUSSUM_RAW_DATA <- file.path(PATH_ROOT, "data")
+PATH_TREE <- file.path(PATH_ROOT, "data")
+PATH_PLOT <- file.path(PATH_ROOT, "presentation")
+dir.create(PATH_ATUSSUM_RAW_DATA)
+dir.create(PATH_TREE)
+dir.create(PATH_TREE)
+dir.create(PATH_PLOT)
 
 # File
 FILE_ATUSSUM_RAW_DATA <- file.path(PATH_ATUSSUM_RAW_DATA, "atussum_0321.csv")
-FILE_SAMPLE_TREE_V0 <- file.path(PATH_SAMPLE_TREE, "sample_tree_newick_v0.nwk")
-FILE_SAMPLE_TREE_V1 <- file.path(PATH_SAMPLE_TREE, "sample_tree_newick_v1.nwk")
-FILE_SAMPLE_TREE_V2 <- file.path(PATH_SAMPLE_TREE, "sample_tree_newick_v2.nwk")
 FILE_TREE_A <- file.path(PATH_TREE, "tree_newick_a.nwk")
 FILE_TREE_B <- file.path(PATH_TREE, "tree_newick_b.nwk")
-FILE_TREE_C <- file.path(PATH_TREE, "tree_newick_c.nwk")
 FILE_PLOT_A_WITH_TEXT <- file.path(PATH_PLOT, "plot_a_with_text.png")
 FILE_PLOT_A_NO_TEXT <- file.path(PATH_PLOT, "plot_a_no_text.png")
 FILE_PLOT_A_HTML <- file.path(PATH_PLOT, "plotly_dendrogram_interactive_a.html")
 FILE_PLOT_B_WITH_TEXT <- file.path(PATH_PLOT, "plot_b_with_text.png")
 FILE_PLOT_B_NO_TEXT <- file.path(PATH_PLOT, "plot_b_no_text.png")
 FILE_PLOT_B_HTML <- file.path(PATH_PLOT, "plotly_dendrogram_interactive_b.html")
-```
-
-# Sample Trees-v0
-
-## Read files
-
-```{r}
-sample_tree_v0 <- read.tree(FILE_SAMPLE_TREE_V0)
-sample_tree_v1 <- read.tree(FILE_SAMPLE_TREE_V1)
-```
-
-## Plot
-
-```{r}
-sample_tree_v0$node_size <- seq(1:25) * 2
-sample_tree_v0$node_id <- seq(1:25)
-
-p <- ggtree(sample_tree_v0, branch.length = "none", layout = "dendrogram") +
-  geom_point2(aes(size = sample_tree_v0$node_size), shape = "square") +
-  geom_text(aes(label = sample_tree_v0$node_id), hjust = -1) +
-  # coord_cartesian(clip = 'off') +
-  theme(
-    legend.position = "bottom"
-  )
-
-p %>% flip(1, 2)
-```
-
-# Sample Trees-v1
-
-- https://en.wikipedia.org/wiki/Newick_format#:~:text=In%20mathematics%2C%20Newick%20tree%20format,Maddison%2C%20Christopher%20Meacham%2C%20F.
-
-## Read files
-
-```{r}
-sample_tree_v1 <- read.tree(FILE_SAMPLE_TREE_V1)
-```
-
-## Plot
-
-```{r}
-df_node_feature <- data.frame(
-  node_label = c("A", "B", "C", "D", "F", "E"),
-  node_text = c("A", "B", "C", "D", "F", "E"),
-  node_size = seq(1, 6)
-)
-
-p <- ggtree(sample_tree_v1, branch.length = "none", layout = "dendrogram") %<+%
-  df_node_feature +
-  geom_point(aes(size = node_size), shape = "square") +
-  geom_text(aes(label = node_text), hjust = -1) +
-  # ensure the radius encodes the size
-  scale_size_identity(guide = "legend", labels = seq(1, 6)^2) +
-  # coord_cartesian(clip = 'off') +
-  theme(
-    legend.position = "bottom"
-  )
-p
-```
-
-# Sample Trees-v2
-
-- a balanced tree with different branching factor at each level
-
-## Generate the tree structure
-
-```{r}
-# s1_split <- str_split(s1, pattern = "")[[1]]
-# list_name_levels = list(c("All"),c("S1","S2"),c("A1","A2","A3"),c("E1","E2","E3"))
-# create_tree_string_newick(list_name_levels)
-create_tree_string_newick <- function(list_name_levels) {
-  #' Create a fully balanced rooted tree in Newick string format.
-  #'
-  #' @param list_name_levels the ordered list of the nodes used to branch the tree (from top to down). E.g., c(c("All"),c("S1","S2"),c("A1","A2","A3"),c("E1","E2","E3")).
-  #' @return This will create a tree with 1x2x3x3=18 leafs and 4 levels (including the root node "All") in Newick string format, i.e., (((S1A1E1:0.1,S1A1E2:0.1,S1A1E3:0.1)S1A1:0.1,(S1A2E1:0.1,S1A2E2:0.1,S1A2E3:0.1)S1A2:0.1,(S1A3E1:0.1,S1A3E2:0.1,S1A3E3:0.1)S1A3:0.1)S1:0.1,((S2A1E1:0.1,S2A1E2:0.1,S2A1E3:0.1)S2A1:0.1,(S2A2E1:0.1,S2A2E2:0.1,S2A3E3:0.1)S2A2:0.1,(S2A3E1:0.1,S2A3E2:0.1,S2A3E3:0.1)S2A3:0.1)S2:0.1)All:0;
-  #  initialized
-  # - the root node
-  output_string_split <- c(str_split(list_name_levels[1], pattern = "")[[1]], ":", "0", ";")
-  # add layers
-  if (length(list_name_levels) > 1) {
-    for (i_level in 2:length(list_name_levels)) {
-      node_names_this_level <- list_name_levels[[i_level]]
-      output_string_split <- create_tree_string_newick_one_layer(output_string_split, node_names_this_level, i_level)
-      # print(paste0(output_string_split, collapse = ""))
-    }
-  }
-  return(paste(output_string_split, collapse = ""))
-}
-
-create_tree_string_newick_one_layer <- function(input_string_split, node_names_this_level, i_level) {
-  #' Create one layer of the fully balanced rooted tree in Newick string format
-  #'
-  #' @param string_split a split string, e.g., str_split("((S1A1:0.1,S1A2:0.1,S1A3:0.1)S1:0.1,(S2A1:0.1,S2A2:0.1,S2A3:0.1)S2:0.1)All:0;",pattern="")
-  #' @param node_names_this_level the node names of this level, e.g., c("E1","E2","E3")
-  #' @param i_level the depth of the tree. Root = 1.
-  #' @return This will add one child layer to the current tree, e.g., str_split((((S1A1E1:0.1,S1A1E2:0.1,S1A1E3:0.1)S1A1:0.1,(S1A2E1:0.1,S1A2E2:0.1,S1A2E3:0.1)S1A2:0.1,(S1A3E1:0.1,S1A3E2:0.1,S1A3E3:0.1)S1A3:0.1)S1:0.1,((S2A1E1:0.1,S2A1E2:0.1,S2A1E3:0.1)S2A1:0.1,(S2A2E1:0.1,S2A2E2:0.1,S2A3E3:0.1)S2A2:0.1,(S2A3E1:0.1,S2A3E2:0.1,S2A3E3:0.1)S2A3:0.1)S2:0.1)All:0;,pattern="")
-  # reaches the leaf node
-  i_c <- 1
-  while (input_string_split[i_c] != ";") {
-    # detect the position to insert child node
-    i_c <- i_c + 1
-    if (input_string_split[i_c] == ":") {
-      i_backward <- i_c
-      while (i_backward >= 0) {
-        i_backward <- i_backward - 1
-        # insert
-        if (i_backward == 0 || input_string_split[i_backward] %in% c("(", ",")) {
-          name_parent_node <- input_string_split[(i_backward + 1):(i_c - 1)]
-          name_child_node <- "("
-          for (node_name in node_names_this_level) {
-            if (i_level > 2) {
-              name_child_node <- c(
-                name_child_node, name_parent_node,
-                str_split(node_name, pattern = "")[[1]],
-                ":", "0", ".", "1", ","
-              )
-              # when the root is the parent, don't repeat the root's name
-            } else if (i_level == 2) {
-              name_child_node <- c(
-                name_child_node,
-                str_split(node_name, pattern = "")[[1]],
-                ":", "0", ".", "1", ","
-              )
-            }
-          }
-          # remove the last ","
-          name_child_node <- name_child_node[1:(length(name_child_node) - 1)]
-          name_child_node <- c(name_child_node, ")")
-          input_string_split <- append(input_string_split,
-            values = name_child_node,
-            after = i_backward
-          )
-          i_c <- i_c + length(name_child_node)
-          break
-        } else if (input_string_split[i_backward] == ")") {
-          break
-        }
-      }
-    }
-  }
-  return(input_string_split)
-}
-```
-
-```{r}
-
-# create the string programmatically
-list_name_levels <- list(
-  c("All"),
-  c("S1", "S2"),
-  c("A1", "A2", "A3"),
-  c("E1", "E2", "E3")
-  # c("I1","I2","I3")
-)
-str_sample_tree_v2 <- create_tree_string_newick(list_name_levels)
-write.table(str_sample_tree_v2, FILE_SAMPLE_TREE_V2, col.names = F, row.names = F, quote = F)
-```
-
-## Read files
-
-```{r}
-sample_tree_v2 <- read.tree(FILE_SAMPLE_TREE_V2)
-```
-
-## Generate the tree features
-
-```{r}
-num_nodes <- length(c(sample_tree_v2$node.label, sample_tree_v2$tip.label))
-SIZE_SCALING_FACTOR <- 1000
-df_node_feature <- data.frame(
-  node_label = c(sample_tree_v2$node.label, sample_tree_v2$tip.label),
-  # sqrt because the size is defined by area while ggplot scale both the width and height by the size
-  node_size = sqrt(c(
-    1, 1 / 2, 1 / 6, 1 / 6, 1 / 6, 1 / 2, 1 / 6, 1 / 6, 1 / 6,
-    rep(1 / 18, times = length(sample_tree_v2$tip.label))
-  ) * SIZE_SCALING_FACTOR)
-  # node_size = sqrt(seq(num_nodes,1)*0.05)
-)
-
-# add size to the text to show
-df_node_feature$node_text <-
-  paste0(
-    str_extract(string = df_node_feature$node_label, pattern = "(All)|\\w\\d+$"),
-    "\n",
-    round(100 * df_node_feature$node_size^2 / SIZE_SCALING_FACTOR, 1),
-    " %"
-  )
-```
-
-## Plot
-
-### Design 1: Area encoding (circle)
-
-```{r}
-p_1 <-
-  # ggtree(sample_tree_v2, branch.length = "none", layout = "circular") %<+%
-  ggtree(sample_tree_v2, branch.length = "none", layout = "dendrogram") %<+%
-  # ggtree(sample_tree_v2, branch.length = "none", layout = "ellipse") %<+%
-  # ggtree(sample_tree_v2, branch.length = "none", layout = "fan",open.angle = 30) %<+%
-  df_node_feature +
-  geom_point(aes(size = node_size), shape = "circle", alpha = 0.5) +
-  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
-  scale_x_continuous(expand = c(0.1, 0.1)) +
-  scale_y_continuous(expand = c(0.1, 0.1)) +
-  # geom_text_repel(aes(label = node_text), hjust = -0.2) +
-  # ensure the radius encodes the size
-  scale_size_identity(
-    # guide = "legend"
-    # breaks = sqrt(c(5,10,20,40)),
-    # labels = c(5,10,20,40)
-  ) +
-  layout_dendrogram() +
-  # coord_flip(clip = 'off')+
-  # coord_cartesian(clip = 'off') +
-  theme(
-    legend.position = "bottom"
-  )
-p_1
-```
-
-```{r}
-ggplotly(p_1, tooltip = "size")
-```
-
-### Design 2: Area+Length encoding (Rectangle)
-
-```{r}
-p_2 <-
-  ggtree(sample_tree_v2, branch.length = "none", layout = "ellipse") %<+%
-  df_node_feature +
-  geom_tile(aes(height = (node_size^2) * 0.005), width = 0.1, colour = "grey50", alpha = 0.5) +
-  # geom_point(aes(size = node_size), shape = "square",alpha=0.5) +
-  geom_text(aes(label = node_text), hjust = -0.2, vjust = 1) +
-  scale_x_continuous(expand = c(0.1, 0.1)) +
-  scale_y_continuous(expand = c(0.1, 0.1)) +
-  # geom_text_repel(aes(label = node_text), hjust = -0.2) +
-  # ensure the radius encodes the size
-  scale_size_identity(
-    # guide = "legend"
-    # breaks = sqrt(c(5,10,20,40)),
-    # labels = c(5,10,20,40)
-  ) +
-  layout_dendrogram() +
-  # coord_flip(clip = 'off')+
-  # coord_cartesian(clip = 'off') +
-  theme(
-    legend.position = "bottom"
-  )
-p_2
 ```
 
 # Real Data
