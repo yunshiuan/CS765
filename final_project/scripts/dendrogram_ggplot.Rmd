@@ -195,18 +195,17 @@ create_tree_string_newick_one_layer <- function(input_string_split, node_names_t
 ```
 
 ```{r}
-if (!file.exists(FILE_SAMPLE_TREE_V2)) {
-  # create the string pragmatically
-  list_name_levels <- list(
-    c("All"),
-    c("S1", "S2"),
-    c("A1", "A2", "A3"),
-    c("E1", "E2", "E3")
-    # c("I1","I2","I3")
-  )
-  str_sample_tree_v2 <- create_tree_string_newick(list_name_levels)
-  write.table(str_sample_tree_v2, FILE_SAMPLE_TREE_V2, col.names = F, row.names = F, quote = F)
-}
+
+# create the string programmatically
+list_name_levels <- list(
+  c("All"),
+  c("S1", "S2"),
+  c("A1", "A2", "A3"),
+  c("E1", "E2", "E3")
+  # c("I1","I2","I3")
+)
+str_sample_tree_v2 <- create_tree_string_newick(list_name_levels)
+write.table(str_sample_tree_v2, FILE_SAMPLE_TREE_V2, col.names = F, row.names = F, quote = F)
 ```
 
 ## Read files
@@ -363,6 +362,7 @@ df_real <-
 ```{r}
 # iterative histogram (the proportion of people at each level)
 list_group_vars_a <- c("new_sex", "new_age", "new_employ_status")
+# list_group_vars_a <- c("new_age", "new_sex", "new_employ_status")
 
 list_df_hist_a <- list()
 
@@ -423,7 +423,7 @@ COLOR_NLF <- rgb(255, 0, 255, 128, maxColorValue = 255)
 SIZE_SCALING_FACTOR <- 1
 df_node_feature_a <-
   df_hist_a %>%
-mutate(
+  mutate(
     node_size = prop * SIZE_SCALING_FACTOR,
     node_label_abrv = str_extract(
       string = node_label,
@@ -463,8 +463,8 @@ mutate(
     ),
     node_color = case_when(
       node_label == "All" ~ COLOR_ALL,
-      node_label == "S1" ~ COLOR_MALE,
-      node_label == "S2" ~ COLOR_FEMALE,
+      grepl(pattern = "S1$", x = node_label) ~ COLOR_MALE,
+      grepl(pattern = "S2$", x = node_label) ~ COLOR_FEMALE,
       grepl(pattern = "A1$", x = node_label) ~ COLOR_YOUNG,
       grepl(pattern = "A2$", x = node_label) ~ COLOR_MIDDLE,
       grepl(pattern = "A3$", x = node_label) ~ COLOR_OLD,
@@ -482,24 +482,25 @@ mutate(
     node_size,
     node_text,
     node_color
-  )  
+  )
 ```
 
 ### Generate the tree structure
 
 ```{r}
-if (!file.exists(FILE_TREE_A)) {
-  # create the string pragmatically
-  list_name_levels <- list(
-    c("All"),
-    c("S1", "S2"),
-    c("A1", "A2", "A3"),
-    c("E1", "E2", "E3")
-    # c("C1","C2","C3")
-  )
-  str_tree <- create_tree_string_newick(list_name_levels)
-  write.table(str_tree, FILE_TREE_A, col.names = F, row.names = F, quote = F)
-}
+# create the string programmatically
+list_name_levels <- list(
+  c("All"),
+  # sex
+  c("S1", "S2"),
+  # age
+  c("A1", "A2", "A3"),
+  # employment
+  c("E1", "E2", "E3")
+  # c("C1","C2","C3")
+)
+str_tree <- create_tree_string_newick(list_name_levels)
+write.table(str_tree, FILE_TREE_A, col.names = F, row.names = F, quote = F)
 ```
 
 ### Read files
@@ -589,8 +590,10 @@ plotly_a <-
             node_label_readable, "\n",
             node_prop_abrv
           ),
-          text = paste(node_label_full,"\n",
-                       node_prop_abrv, "%")
+          text = paste(
+            node_label_full, "\n",
+            node_prop_abrv, "%"
+          )
         ),
         hjust = -0.2, vjust = 1
       ),
@@ -610,7 +613,7 @@ Sys.setenv("plotly_api_key" = "k3x5GH7VVwJ6LClgE7FX")
 options(browser = "false")
 ```
 
-- https://chart-studio.plotly.com/~vimchiz/40.embed
+- https://chart-studio.plotly.com/~vimchiz/42.embed
 
 ```{r}
 api_create(plotly_a, filename = "CS765_plotly_a")
@@ -769,18 +772,20 @@ df_node_feature_b <-
 ### Generate the tree structure
 
 ```{r}
-if (!file.exists(FILE_TREE_B)) {
-  # create the string pragmatically
-  list_name_levels <- list(
-    c("All"),
-    c("S1", "S2"),
-    c("A1", "A2", "A3"),
-    c("C1", "C2"),
-    c("E1", "E2", "E3")
-  )
-  str_tree <- create_tree_string_newick(list_name_levels)
-  write.table(str_tree, FILE_TREE_B, col.names = F, row.names = F, quote = F)
-}
+# create the string programmatically
+list_name_levels <- list(
+  c("All"),
+  # sex
+  c("S1", "S2"),
+  # age
+  c("A1", "A2", "A3"),
+  # number of children
+  c("C1", "C2"),
+  # employment status
+  c("E1", "E2", "E3")
+)
+str_tree <- create_tree_string_newick(list_name_levels)
+write.table(str_tree, FILE_TREE_B, col.names = F, row.names = F, quote = F)
 ```
 
 ### Read files
@@ -904,8 +909,10 @@ plotly_b <-
             node_label_readable, "\n",
             node_prop_abrv
           ),
-          text = paste(node_label_full,"\n",
-                       node_prop_abrv, "%")
+          text = paste(
+            node_label_full, "\n",
+            node_prop_abrv, "%"
+          )
         ),
         hjust = -0.2, vjust = 1
       ),
